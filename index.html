@@ -380,7 +380,7 @@ async function groqCall(msgs,json){
 }
 async function aiChat(msgs){if(sample){const r=await sample(msgs,{cache:false,modelTier:"quick"});return r.text;}return groqCall(msgs,false);}
 async function aiJSON(prompt){if(sample)return await sample.json(prompt,{modelTier:"default"});const t=await groqCall([{role:"user",content:prompt}],true);return JSON.parse(t.replace(/^```(json)?|```$/g,""));}
-function aiErr(e){return e&&e.code==="rate_limited"?"Troppe richieste: riprova tra poco.":e&&e.code==="bad_key"?"Chiave Groq non valida: controllala in Progressi › Impostazioni.":e&&e.code==="network"?"Nessuna connessione.":"Servizio AI non disponibile ora: riprova tra poco.";}
+function aiErr(e){if(e&&e.code==="no_key")return "Per valutare la voce serve la chiave Groq gratuita: Progressi › Impostazioni.";return e&&e.code==="rate_limited"?"Troppe richieste: riprova tra poco.":e&&e.code==="bad_key"?"Chiave Groq non valida: controllala in Progressi › Impostazioni.":e&&e.code==="network"?"Nessuna connessione.":"Servizio AI non disponibile ora: riprova tra poco.";}
 const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
 const STANDALONE=!(window.claude&&typeof window.claude.use==="function");
 function dictOn(){return !!dictation||(STANDALONE&&!!SR);}
@@ -446,22 +446,20 @@ let rate=0.9;
 function hasVoice(){return (window.speechSynthesis&&typeof SpeechSynthesisUtterance!=="undefined")||!!tts;}
 function stopSpeak(){try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){} try{if(tts)tts.stop();}catch(e){}}
 function speak(lines,r){
-  // lines: [{text, who}] ; who 0/1 per voce diversa
-  stopSpeak(); const rr=r||rate;
-  if(window.speechSynthesis&&typeof SpeechSynthesisUtterance!=="undefined"&&(frVoices().length||voices.length===0)){
-    const fv=frVoices();
+  // lines: [{text, who}] ; who 0/1 per voce diversa. Tutte le frasi in coda subito, dentro il tocco dell'utente (necessario su iPhone).
+  const rr=r||rate, synth=window.speechSynthesis;
+  if(synth&&typeof SpeechSynthesisUtterance!=="undefined"){
+    try{if(synth.speaking||synth.pending)synth.cancel();synth.resume();}catch(e){}
+    loadVoices(); const fv=frVoices(); const lang=S.profile.variant==="qc"?"fr-CA":"fr-FR";
     return new Promise(res=>{
-      let i=0;
-      const next=()=>{
-        if(i>=lines.length){res();return;}
-        const l=lines[i++]; const u=new SpeechSynthesisUtterance(l.text);
-        u.lang=S.profile.variant==="qc"?"fr-CA":"fr-FR"; u.rate=rr;
-        if(fv.length){u.voice=fv[(l.who||0)%fv.length];}
-        if(fv.length<2&&l.who)u.pitch=0.8;
-        u.onend=next; u.onerror=()=>res();
-        speechSynthesis.speak(u);
-      };
-      next();
+      lines.forEach((l,i)=>{
+        const u=new SpeechSynthesisUtterance(l.text); u.lang=lang; u.rate=rr;
+        if(fv.length)u.voice=fv[(l.who||0)%fv.length];
+        if(fv.length<2&&l.who)u.pitch=0.85;
+        if(i===lines.length-1){u.onend=()=>res();u.onerror=()=>res();}
+        synth.speak(u);
+      });
+      if(!lines.length)res();
     });
   }
   if(tts){
@@ -470,7 +468,44 @@ function speak(lines,r){
   }
   return Promise.resolve();
 }
+/* ============================ REGISTRAZIONE E VALUTAZIONE DELLA VOCE ============================ */
+const REC_OK=STANDALONE&&!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)&&typeof MediaRecorder!=="undefined";
+let rec=null;
+function note(near,txt){const old=near.parentNode.querySelector(".rec-note");if(old)old.remove();const p=document.createElement("p");p.className="note rec-note";p.textContent=txt;near.parentNode.insertBefore(p,near.nextSibling);}
+async function toggleRec(btn,onDone){
+  if(rec){if(rec.btn===btn)rec.mr.stop();return;}
+  stopSpeak();
+  let stream;
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}});}
+  catch(e){note(btn,"Microfono non autorizzato. Su iPhone: Impostazioni › Safari › Microfono › Consenti, poi ricarica la pagina.");return;}
+  const types=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg"];
+  const mt=types.find(t=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t))||"";
+  let mr; try{mr=new MediaRecorder(stream,mt?{mimeType:mt}:undefined);}catch(e){mr=new MediaRecorder(stream);}
+  const chunks=[]; rec={mr,btn,t0:Date.now()};
+  mr.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+  mr.onstop=()=>{
+    stream.getTracks().forEach(t=>t.stop());
+    const blob=new Blob(chunks,{type:mr.mimeType||mt||"audio/webm"}); const dur=(Date.now()-rec.t0)/1000; rec=null;
+    btn.classList.remove("red"); btn.innerHTML=ICON.mic+" Registra"; onDone(blob,dur);
+  };
+  mr.start(250); btn.classList.add("red"); btn.innerHTML=ICON.stop+" Stop";
+}
+async function transcribe(blob){
+  if(!groqKey)throw {code:"no_key"};
+  const ext=blob.type.includes("mp4")?"m4a":blob.type.includes("ogg")?"ogg":"webm";
+  const fd=new FormData(); fd.append("file",blob,"voce."+ext); fd.append("model","whisper-large-v3"); fd.append("language","fr"); fd.append("response_format","verbose_json"); fd.append("temperature","0");
+  let res;
+  try{res=await fetch("https://api.groq.com/openai/v1/audio/transcriptions",{method:"POST",headers:{"Authorization":"Bearer "+groqKey},body:fd});}catch(e){throw {code:"network"};}
+  if(res.status===429)throw {code:"rate_limited"}; if(res.status===401)throw {code:"bad_key"}; if(!res.ok)throw {code:"http"};
+  const j=await res.json(); const segs=j.segments||[];
+  const lp=segs.length?segs.reduce((a,x)=>a+(x.avg_logprob||0),0)/segs.length:null;
+  let pauses=0; for(let i=1;i<segs.length;i++){if(segs[i].start-segs[i-1].end>0.8)pauses++;}
+  return {text:(j.text||"").trim(),clarity:lp==null?null:Math.max(0,Math.min(1,1+lp)),duration:j.duration||null,pauses};
+}
+function recUI(id,label){return REC_OK?`<button class="btn soft small" id="${id}">${ICON.mic} ${label||"Registra"}</button>`:"";}
 const ICON={
+ mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" width="18" height="18"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+ stop:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
  play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
  today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>',
  ear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 7a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 0 1 4 0"/></svg>',
@@ -709,29 +744,59 @@ function compare(target,said){
   const t=norm(target).split(" ").filter(Boolean), s=norm(said).split(" ").filter(Boolean);
   const pool={}; s.forEach(w=>pool[w]=(pool[w]||0)+1);
   let ok=0; const html=target.split(/\s+/).map(w=>{const n=norm(w);if(!n)return esc(w);const parts=n.split(" ");const hit=parts.every(p=>pool[p]>0);if(hit){parts.forEach(p=>pool[p]--);ok+=parts.length;return `<ins>${esc(w)}</ins>`;}return `<del>${esc(w)}</del>`;}).join(" ");
-  return {score:t.length?Math.min(1,ok/t.length):0,html};
+  return {score:t.length?Math.min(1,ok/t.length)*(s.length>t.length?Math.max(0.5,t.length/s.length):1):0,html};
 }
 
 /* ============================ PRONUNCIA ============================ */
 function viewPronuncia(){
   return `<div class="stack"><button class="btn ghost small" data-go="ascolta" style="align-self:flex-start">‹ Ascolta</button><h1>Pronuncia</h1>
-   <p class="muted">Ascolta, ripeti ad alta voce, poi detta la frase con il microfono della tastiera impostata in francese: se il telefono ti capisce, la pronuncia è comprensibile.</p></div>
+   <p class="muted">${REC_OK?"Ascolta il modello, registra la tua voce, riascoltati e fatti valutare.":"Ascolta, ripeti ad alta voce, poi detta la frase con il microfono della tastiera."}</p></div>
+   ${REC_OK&&!groqKey?`<p class="note">Per la valutazione automatica della voce inserisci la chiave Groq gratuita in Progressi › Impostazioni. Senza chiave puoi comunque registrarti e riascoltarti.</p>`:""}
    ${SOUNDS.map(s=>`<button class="opt" data-go="suono" data-p='${JSON.stringify({id:s.id})}'><div class="row between"><b>${esc(s.title)}</b>${S.pron[s.id]!=null?`<span class="chip good">${Math.round(S.pron[s.id]*100)}%</span>`:""}</div><span class="small muted">${esc(s.tip)}</span></button>`).join("")}`;
 }
 let pr={};
 function viewSuono(){
   const s=SOUNDS.find(x=>x.id===route.id)||SOUNDS[0];
-  if(pr.id!==s.id)pr={id:s.id,res:{}};
+  if(pr.id!==s.id)pr={id:s.id,res:{},rec:{},fb:null};
+  const hasRec=Object.values(pr.rec).some(r=>r.text);
   return `<div class="stack"><button class="btn ghost small" data-go="pronuncia" style="align-self:flex-start">‹ Pronuncia</button><h1>${esc(s.title)}</h1><p class="muted">${esc(s.tip)}</p></div>
-   <p class="note">Sull'iPhone: aggiungi la tastiera Français (Impostazioni › Generali › Tastiera), toccala nel campo e premi il microfono. ${dictOn()?"Qui puoi usare anche il pulsante Detta.":""}</p>
-   ${s.items.map((it,i)=>`<div class="card"><div class="row"><button class="play" data-say="${esc(it)}" data-rate="0.75" aria-label="Ascolta">${ICON.play}</button><span class="fr" style="flex:1">${esc(it)}</span>${pr.res[i]!=null?`<span class="chip ${pr.res[i]>=0.8?"good":"warn"}">${Math.round(pr.res[i]*100)}%</span>`:""}</div>
-     <div class="row"><input type="text" id="pi-${i}" placeholder="Detta qui la frase" autocapitalize="off" style="flex:1">${dictOn()?`<button class="btn soft small" data-dict="${i}">Detta</button>`:""}<button class="btn small" data-pc="${i}">Verifica</button></div><div class="diff small" id="po-${i}"></div></div>`).join("")}
+   ${REC_OK?"":`<p class="note">Su questo browser la registrazione non è disponibile: usa il microfono della tastiera Français nel campo di testo.</p>`}
+   ${s.items.map((it,i)=>{const r=pr.rec[i]||{};return `<div class="card"><div class="row"><button class="play" data-say="${esc(it)}" data-rate="0.75" aria-label="Ascolta il modello">${ICON.play}</button><span class="fr" style="flex:1">${esc(it)}</span>${pr.res[i]!=null?`<span class="chip ${pr.res[i]>=0.8?"good":pr.res[i]>=0.5?"warn":"red"}">${Math.round(pr.res[i]*100)}%</span>`:""}</div>
+     ${REC_OK?`<div class="row">${recUI("pr-rec-"+i)}${r.url?`<audio controls src="${r.url}" style="height:36px;flex:1;min-width:150px"></audio>`:""}</div>`
+     :`<div class="row"><input type="text" id="pi-${i}" placeholder="Detta qui la frase" autocapitalize="off" style="flex:1">${dictOn()?`<button class="btn soft small" data-dict="${i}">Detta</button>`:""}<button class="btn small" data-pc="${i}">Verifica</button></div>`}
+     <div class="diff small" id="po-${i}">${r.html?`Ho capito: ${r.html}${r.clarity!=null?` <span class="muted">· chiarezza ${Math.round(r.clarity*100)}%</span>`:""}`:r.msg?esc(r.msg):""}</div></div>`;}).join("")}
+   ${hasRec&&aiOn()?`<button class="btn soft wide" id="pr-ai">Analisi della pronuncia</button>`:""}
+   <div id="pr-fb">${pr.fb||""}</div>
    <button class="btn wide" id="pr-end">Fine esercizio</button>`;
 }
 binders.suono=()=>{
   const s=SOUNDS.find(x=>x.id===route.id)||SOUNDS[0];
   document.querySelectorAll("[data-pc]").forEach(b=>b.onclick=()=>{const i=+b.dataset.pc;const r=compare(s.items[i],$("#pi-"+i).value);pr.res[i]=r.score;$("#po-"+i).innerHTML=r.html;});
   document.querySelectorAll("[data-dict]").forEach(b=>b.onclick=()=>startDict(b,$("#pi-"+b.dataset.dict)));
+  s.items.forEach((it,i)=>{const btn=$("#pr-rec-"+i);if(!btn)return;btn.onclick=()=>toggleRec(btn,async(blob)=>{
+    const old=pr.rec[i]; if(old&&old.url)URL.revokeObjectURL(old.url);
+    pr.rec[i]={url:URL.createObjectURL(blob)};
+    if(!groqKey){pr.rec[i].msg="Registrata. Per il punteggio inserisci la chiave Groq nelle impostazioni.";render();return;}
+    pr.rec[i].msg="Valuto...";render();
+    try{const t=await transcribe(blob);const c=compare(it,t.text);const sc=t.clarity==null?c.score:0.8*c.score+0.2*t.clarity;
+      Object.assign(pr.rec[i],{text:t.text,html:c.html+`<br><span class="fr">«${esc(t.text)}»</span>`,clarity:t.clarity,msg:""});pr.res[i]=sc;}
+    catch(e){pr.rec[i].msg=aiErr(e);}
+    render();
+  });});
+  const ai=$("#pr-ai"); if(ai)ai.onclick=async()=>{
+    ai.disabled=true; $("#pr-fb").innerHTML=`<p class="muted">Analisi in corso...</p>`;
+    const pairs=s.items.map((it,i)=>pr.rec[i]&&pr.rec[i].text?`- frase attesa: «${it}» | trascrizione automatica della mia voce: «${pr.rec[i].text}»`:"").filter(Boolean).join("\n");
+    try{
+      const r=await aiJSON(`Sei un insegnante di fonetica francese per italiani. Esercizio sul tema «${s.title}». Per ogni frase hai il testo atteso e ciò che un riconoscimento vocale (Whisper) ha capito dalla mia voce: le differenze indicano probabili errori di pronuncia (es. vin capito come vent = nasale sbagliata; tout invece di tu = u francese).
+${pairs}
+Rispondi solo con JSON: {"voto":0.0,"sintesi":"due frasi in italiano","problemi":[{"suono":"...","esempio":"parola o frase","consiglio":"come posizionare bocca e lingua, una o due frasi"}],"da_ripetere":["frase"]}
+voto tra 0 e 1; massimo 3 problemi; se le trascrizioni coincidono, dillo e suggerisci come migliorare fluidità e intonazione.`);
+      pr.fb=`<div class="card"><h3>Analisi · ${Math.round((+r.voto||0)*100)}%</h3><p>${esc(r.sintesi)}</p>
+        ${(r.problemi||[]).map(p=>`<p><b>${esc(p.suono)}</b> <span class="muted">(${esc(p.esempio)})</span><br>${esc(p.consiglio)}</p>`).join("")}
+        ${(r.da_ripetere||[]).map(f=>`<p class="row"><button class="play" data-say="${esc(f)}" data-rate="0.7">${ICON.play}</button><span class="fr">${esc(f)}</span></p>`).join("")}</div>`;
+      render();
+    }catch(e){$("#pr-fb").innerHTML=`<p class="note">${esc(aiErr(e))}</p>`;ai.disabled=false;}
+  };
   $("#pr-end").onclick=()=>{const v=Object.values(pr.res);if(v.length){S.pron[s.id]=v.reduce((a,b)=>a+b,0)/v.length;pushSkill("eo",S.pron[s.id]*0.8,"A2");}markDone("pronuncia");go("oggi");};
 };
 let recog=null;
@@ -843,7 +908,7 @@ function viewParla(){
    <div class="card"><p class="small muted">${esc(SCENES[ch.ctx])}</p>
     <div class="chat">${ch.msgs.map(m=>`<div class="bubble ${m.role==="user"?"me":"ai"}">${esc(m.content)}${m.role==="assistant"?` <button class="play" data-say="${esc(m.content)}" data-who="1" aria-label="Ascolta" style="width:30px;height:30px;vertical-align:middle">${ICON.play}</button>`:""}</div>`).join("")}${ch.busy?`<div class="bubble ai muted">...</div>`:""}</div>
     ${ch.fb?"":`<textarea id="ch-in" placeholder="Rispondi in francese (microfono della tastiera)" style="min-height:80px"></textarea>
-    <div class="row">${dictOn()?`<button class="btn soft" id="ch-dict">Detta</button>`:""}<button class="btn" id="ch-send" style="flex:1" ${ch.busy?"disabled":""}>Invia</button></div>
+    <div class="row">${REC_OK?`<button class="btn soft" id="ch-rec">${ICON.mic} Registra</button>`:dictOn()?`<button class="btn soft" id="ch-dict">Detta</button>`:""}<button class="btn" id="ch-send" style="flex:1" ${ch.busy?"disabled":""}>Invia</button></div>
     <button class="btn ghost" id="ch-end" ${ch.msgs.length<4||ch.busy?"disabled":""}>Fine e riscontro</button>`}
     <div id="ch-fb">${ch.fb||""}</div></div>`;
 }
@@ -862,6 +927,7 @@ binders.parla=()=>{
   const cp=$("#ch-copy"); if(cp)cp.onclick=()=>copyText(chatInstr()+"\nCommence la conversation.",cp);
   const cd=$("#ch-done"); if(cd)cd.onclick=()=>{markDone("missione");go("oggi");};
   const di=$("#ch-dict"); if(di)di.onclick=()=>startDict(di,$("#ch-in"));
+  const cr=$("#ch-rec"); if(cr)cr.onclick=()=>toggleRec(cr,async blob=>{const f=$("#ch-in");f.value="Trascrivo...";try{const t=await transcribe(blob);f.value=t.text;}catch(e){f.value="";note(cr,aiErr(e));}});
   const sd=$("#ch-send"); if(sd)sd.onclick=()=>{const v=$("#ch-in").value.trim();if(!v)return;ch.msgs.push({role:"user",content:v});aiTurn();};
   const en=$("#ch-end"); if(en)en.onclick=async()=>{
     en.disabled=true; $("#ch-fb").innerHTML=`<p class="muted">Preparo il riscontro...</p>`;
@@ -973,8 +1039,8 @@ function viewOrale(){
    <div class="card"><p class="fr">${esc(o.text)}</p>
     <button class="btn soft" data-say="${esc(o.text)}">${ICON.play} Ascolta il tema</button>
     ${orl.phase==="prep"?`<textarea id="o-notes" placeholder="Appunti: tesi, due argomenti, un esempio">${esc(orl.notes||"")}</textarea><button class="btn" id="o-start">Inizia a parlare</button>`
-    :`<textarea id="o-in" style="min-height:200px" placeholder="Tocca qui e usa il microfono della tastiera">${esc(orl.text||"")}</textarea>
-     <div class="row">${dictOn()?`<button class="btn soft" id="o-dict">Detta</button>`:""}${aiOn()?`<button class="btn" id="o-eval" style="flex:1">Valuta con ${aiName()}</button>`:`<button class="btn" id="o-copy" style="flex:1">Copia per Claude</button>`}</div>`}
+    :`${orl.url?`<audio controls src="${orl.url}" style="width:100%"></audio>`:""}${orl.meta?`<p class="small muted">Durata ${orl.meta.sec} s · ${orl.text?Math.round(orl.text.split(/\s+/).length/(orl.meta.sec/60)):0} parole al minuto · pause lunghe ${orl.meta.pauses}${orl.meta.clarity!=null?" · chiarezza "+Math.round(orl.meta.clarity*100)+"%":""}</p>`:""}<textarea id="o-in" style="min-height:200px" placeholder="Tocca qui e usa il microfono della tastiera">${esc(orl.text||"")}</textarea>
+     <div class="row">${REC_OK?`<button class="btn soft" id="o-rec">${ICON.mic} Registra</button>`:dictOn()?`<button class="btn soft" id="o-dict">Detta</button>`:""}${aiOn()?`<button class="btn" id="o-eval" style="flex:1">Valuta con ${aiName()}</button>`:`<button class="btn" id="o-copy" style="flex:1">Copia per Claude</button>`}</div>`}
     <div id="o-fb">${orl.fb||""}</div></div>`;
 }
 binders.orale=()=>{
@@ -986,9 +1052,16 @@ binders.orale=()=>{
   const st=$("#o-start"); if(st)st.onclick=()=>{orl.phase="talk";orl.t0=Date.now();render();};
   const inp=$("#o-in"); if(inp)inp.oninput=()=>orl.text=inp.value;
   const di=$("#o-dict"); if(di)di.onclick=()=>startDict(di,inp);
+  const orc=$("#o-rec"); if(orc)orc.onclick=()=>toggleRec(orc,async(blob,dur)=>{
+    if(orl.url)URL.revokeObjectURL(orl.url); orl.url=URL.createObjectURL(blob); inp.value="Trascrivo...";
+    try{const t=await transcribe(blob);orl.text=t.text;orl.meta={sec:Math.round(t.duration||dur),pauses:t.pauses,clarity:t.clarity};}
+    catch(e){orl.text="";orl.meta=null;orl.fb=`<p class="note">${esc(aiErr(e))}</p>`;}
+    render();
+  });
   const pr=()=>`Sei un esaminatore ${S.profile.exam==="delf"?"DELF B2 (produzione orale)":"TCF Canada (espressione orale)"}. Questo è il parlato dettato e trascritto di un adulto italiano (ignora punteggiatura e maiuscole). Tema: «${o.text}»
 Trascrizione:
-"""${orl.text||""}"""`;
+"""${orl.text||""}"""${orl.meta?`
+Dati della registrazione: ${orl.meta.sec} secondi, ${orl.meta.pauses} pause oltre 0,8 s, chiarezza del riconoscimento ${orl.meta.clarity==null?"n.d.":Math.round(orl.meta.clarity*100)+"%"}. Usali per giudicare fluidità e scorrevolezza.`:""}`;
   const cp=$("#o-copy"); if(cp)cp.onclick=()=>copyText(pr()+"\nValuta argomentazione, lessico, grammatica e coerenza, in italiano.",cp);
   const ev=$("#o-eval"); if(ev)ev.onclick=async()=>{
     if((orl.text||"").trim().split(/\s+/).length<25){$("#o-fb").innerHTML=`<p class="note">Servono almeno 25 parole dettate per una valutazione.</p>`;return;}
@@ -1053,8 +1126,11 @@ function viewImpostazioni(){
     <label>Contesti</label><div class="chips">${Object.entries(CONTEXTS).map(([k,l])=>`<button class="toggle ${S.profile.contexts.includes(k)?"on":""}" data-sc="${k}">${l}</button>`).join("")}</div>
     <p class="small muted">Voci francesi trovate su questo dispositivo: ${frVoices().length}. ${dbRef?"Progressi salvati nel tuo profilo Claude.":"Progressi salvati solo su questo dispositivo."}</p>
     <button class="btn" id="s-save">Salva</button></div>
+   <div class="card"><h3>Audio</h3><p class="small muted">Voci francesi sul dispositivo: ${frVoices().map(v=>esc(v.name)).join(", ")||"nessuna trovata"}.</p>
+    <button class="btn soft small" id="s-audio">Prova l'audio</button>
+    <p class="small muted">Se non senti nulla: su iPhone togli il silenzioso (interruttore laterale) e alza il volume; poi Impostazioni › Accessibilità › Contenuto letto ad alta voce › Voci › Français, scarica una voce e riapri l'app.</p></div>
    <div class="card"><h3>Intelligenza artificiale</h3>
-    ${sample?`<p class="small">Dentro Claude l'app usa Claude per conversazioni e correzioni.</p>`:`<p class="small muted">Fuori da Claude, conversazioni e correzioni usano Groq con la tua chiave gratuita (console.groq.com › API Keys). La chiave resta solo su questo dispositivo.</p>
+    ${sample?`<p class="small">Dentro Claude l'app usa Claude per conversazioni e correzioni.</p>`:`<p class="small muted">Fuori da Claude, conversazioni, correzioni e valutazione della voce usano Groq con la tua chiave gratuita (console.groq.com › API Keys). La chiave resta solo su questo dispositivo.</p>
     <label for="s-key">Chiave API Groq</label><input type="text" id="s-key" value="${esc(groqKey)}" placeholder="gsk_..." autocomplete="off" autocapitalize="off" spellcheck="false">
     <label for="s-model">Modello</label><input type="text" id="s-model" value="${esc(groqModel)}" autocapitalize="off" spellcheck="false">
     <div class="row"><button class="btn small" id="s-key-save">Salva chiave</button><button class="btn soft small" id="s-key-test">Prova</button></div><p class="small" id="s-key-msg"></p>`}</div>
@@ -1066,6 +1142,7 @@ function viewImpostazioni(){
 binders.impostazioni=()=>{
   document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{const k=b.dataset.sc;const c=S.profile.contexts;if(c.includes(k)){if(c.length>1)S.profile.contexts=c.filter(x=>x!==k);}else if(c.length<5)c.push(k);save();render();});
   $("#s-save").onclick=()=>{S.profile.exam=$("#s-exam").value;S.profile.date=$("#s-date").value;S.profile.variant=$("#s-var").value;S.profile.daily=Math.max(10,+$("#s-min").value||45);save();go("io");};
+  $("#s-audio").onclick=()=>speak([{text:"Bonjour Mario, ceci est un test audio."}],0.9);
   const ks=$("#s-key-save"); if(ks)ks.onclick=()=>{groqKey=$("#s-key").value.trim();groqModel=$("#s-model").value.trim()||"llama-3.3-70b-versatile";try{localStorage.setItem("c4m-groq",groqKey);localStorage.setItem("c4m-groq-model",groqModel);}catch(e){}$("#s-key-msg").textContent="Salvata.";};
   const kt=$("#s-key-test"); if(kt)kt.onclick=async()=>{groqKey=$("#s-key").value.trim();$("#s-key-msg").textContent="Provo...";try{const t=await aiChat([{role:"user",content:"Réponds seulement: Bonjour !"}]);$("#s-key-msg").textContent="Funziona: "+t.slice(0,40);}catch(e){$("#s-key-msg").textContent=aiErr(e);}};
   $("#s-exp").onclick=()=>{const data=JSON.stringify(S);const name="class4me-francais-"+today()+".json";
