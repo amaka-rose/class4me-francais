@@ -365,13 +365,13 @@ try{const ls=localStorage.getItem(KEY); if(ls)S=merge(JSON.parse(ls));}catch(e){
 let sample=null, tts=null, dictation=null;
 /* AI: Claude dentro claude.ai, oppure Groq (chiave personale) quando l'app gira da sola */
 let groqKey=""; try{groqKey=localStorage.getItem("c4m-groq")||"";}catch(e){}
-let groqModel="llama-3.3-70b-versatile"; try{groqModel=localStorage.getItem("c4m-groq-model")||groqModel;}catch(e){}
+let groqModel="openai/gpt-oss-120b"; try{const m=localStorage.getItem("c4m-groq-model");if(m&&!/llama-3\.3-70b|llama-3\.1-8b/.test(m))groqModel=m;}catch(e){}
 function aiOn(){return !!sample||!!groqKey;}
 function aiName(){return sample?"Claude":"l'AI";}
 async function groqCall(msgs,json){
   let res;
   try{res=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+groqKey},
-    body:JSON.stringify(Object.assign({model:groqModel,messages:msgs,temperature:json?0.3:0.8},json?{response_format:{type:"json_object"}}:{}))});}
+    body:JSON.stringify(Object.assign({model:groqModel,messages:msgs,temperature:json?0.3:0.8},json?{response_format:{type:"json_object"}}:{},/gpt-oss/.test(groqModel)?{reasoning_effort:"low"}:{}))});}
   catch(e){throw {code:"network"};}
   if(res.status===429)throw {code:"rate_limited"};
   if(res.status===401)throw {code:"bad_key"};
@@ -1143,7 +1143,7 @@ binders.impostazioni=()=>{
   document.querySelectorAll("[data-sc]").forEach(b=>b.onclick=()=>{const k=b.dataset.sc;const c=S.profile.contexts;if(c.includes(k)){if(c.length>1)S.profile.contexts=c.filter(x=>x!==k);}else if(c.length<5)c.push(k);save();render();});
   $("#s-save").onclick=()=>{S.profile.exam=$("#s-exam").value;S.profile.date=$("#s-date").value;S.profile.variant=$("#s-var").value;S.profile.daily=Math.max(10,+$("#s-min").value||45);save();go("io");};
   $("#s-audio").onclick=()=>speak([{text:"Bonjour Mario, ceci est un test audio."}],0.9);
-  const ks=$("#s-key-save"); if(ks)ks.onclick=()=>{groqKey=$("#s-key").value.trim();groqModel=$("#s-model").value.trim()||"llama-3.3-70b-versatile";try{localStorage.setItem("c4m-groq",groqKey);localStorage.setItem("c4m-groq-model",groqModel);}catch(e){}$("#s-key-msg").textContent="Salvata.";};
+  const ks=$("#s-key-save"); if(ks)ks.onclick=()=>{groqKey=$("#s-key").value.trim();groqModel=$("#s-model").value.trim()||"openai/gpt-oss-120b";try{localStorage.setItem("c4m-groq",groqKey);localStorage.setItem("c4m-groq-model",groqModel);}catch(e){}$("#s-key-msg").textContent="Salvata.";};
   const kt=$("#s-key-test"); if(kt)kt.onclick=async()=>{groqKey=$("#s-key").value.trim();$("#s-key-msg").textContent="Provo...";try{const t=await aiChat([{role:"user",content:"Réponds seulement: Bonjour !"}]);$("#s-key-msg").textContent="Funziona: "+t.slice(0,40);}catch(e){$("#s-key-msg").textContent=aiErr(e);}};
   $("#s-exp").onclick=()=>{const data=JSON.stringify(S);const name="class4me-francais-"+today()+".json";
     try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove();$("#s-bk-msg").textContent="File esportato: "+name;}
