@@ -50,8 +50,8 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16p
 .countdown b{color:var(--ink);font-size:16px}
 main{flex:1;padding:16px 16px 110px;display:flex;flex-direction:column;gap:14px}
 nav.bottom{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
-nav.bottom .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
-nav.bottom button{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:10px;cursor:pointer}
+nav.bottom .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+nav.bottom button{background:none;border:0;color:var(--muted);font:inherit;font-size:11px;padding:6px 1px;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:10px;cursor:pointer}
 nav.bottom button svg{width:24px;height:24px}
 nav.bottom button.on{color:var(--accent);font-weight:700}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
@@ -340,12 +340,236 @@ const PLACEMENT=[
  ["B2","Les lettres que j'ai ___ sont sur le bureau.",["écrites","écrit","écrits"],0]
 ];
 const NEED_HOURS={A1:450,A2:380,B1:250,B2:60};
+/* ============================ PERCORSO: DATI ============================
+   Progressione A1 → B2 costruita sui descrittori del CECR e sui criteri delle griglie DELF B2
+   (France Éducation international); fase finale specifica per DELF B2 o TCF Canada. */
+const PHASES=[
+ {id:"p1",lvl:"A1",title:"Riattivazione",goal:"Riprendere suoni, verbi di base e frasi essenziali studiati alle medie."},
+ {id:"p2",lvl:"A2",title:"Costruzione A2",goal:"Descrivere, raccontare al passato, fare progetti, chiedere con cortesia."},
+ {id:"p3",lvl:"B1",title:"Autonomia B1",goal:"Raccontare esperienze, esprimere opinioni e ipotesi, riferire, collegare cause e conseguenze."},
+ {id:"p4",lvl:"B2",title:"Argomentare B2",goal:"Difendere un'opinione con argomenti, concessioni ed esempi, in registro adatto."},
+ {id:"p5",lvl:"EX",title:"Preparazione all'esame",goal:"Strategie e simulazioni nel formato dell'esame scelto."}
+];
+const UNIT_HOURS={A1:8,A2:12,B1:18,B2:22,EX:15};
+const UNITS=[
+ {id:"u1",ph:"p1",lvl:"A1",title:"Se présenter",can:"Presentarti: nome, età, lavoro, famiglia, provenienza.",
+  gram:"être e avoir · articoli · femminile delle nazionalità · ne... pas",
+  spiega:"In francese il soggetto è sempre obbligatorio: je suis, mai «suis» da solo. Être e avoir sono irregolari e servono anche come ausiliari. L'articolo segnala il genere: un/une (indeterminativi), le/la/l'/les (determinativi). La negazione circonda il verbo: ne + verbo + pas, con n' davanti a vocale.",
+  ex:[["Je suis architecte.","Sono architetto."],["J'ai quarante-sept ans.","Ho quarantasette anni."],["Elle n'est pas italienne, elle est française.","Non è italiana, è francese."],["Nous avons une maison près de la mer.","Abbiamo una casa vicino al mare."]],
+  trap:"La professione dopo être va senza articolo (je suis architecte). L'età si dice con avoir (j'ai 47 ans).",
+  quiz:[["Je ___ architecte.",["suis","ai","es"]],["Il ___ quarante ans.",["a","est","as"]],["Elle est ___.",["italienne","italien","italiens"]],["Nous ___ pas de voiture.",["n'avons","ne sommes","avons"]],["J'habite à Rome, ___ Italie.",["en","au","à"]]],
+  acts:[{t:"verbi",ten:["pres"],l:"Verbi être e avoir al présent"},{t:"suono",id:"e",l:"Pronuncia: é, è, ê"},{t:"dialogo",lvl:"A1",l:"Ascolto A1"},{t:"scrivi",w:{id:"pw1",lvl:"A1",words:60,focus:"presentarsi",text:"Présentez-vous en 60 mots : nom, âge, travail, famille, ville.",it:"Presentati in 60 parole."},l:"Scrivi la tua presentazione"}]},
+ {id:"u2",ph:"p1",lvl:"A1",title:"Ma journée",can:"Descrivere una giornata tipo e fare domande semplici.",
+  gram:"verbi in -er · aller e faire · l'ora · tre modi per fare domande",
+  spiega:"I verbi in -er (parler, travailler, habiter) prendono -e, -es, -e, -ons, -ez, -ent; je, tu, il e ils si pronunciano uguali. Per una domanda bastano l'intonazione (Tu viens ?), est-ce que (Est-ce que tu viens ?) oppure l'inversione, più formale (Venez-vous ?).",
+  ex:[["Je commence à huit heures.","Comincio alle otto."],["À quelle heure est-ce que tu pars ?","A che ora parti?"],["Le samedi, je fais les courses.","Il sabato faccio la spesa."],["Nous allons au bureau en voiture.","Andiamo in ufficio in macchina."]],
+  trap:"Le samedi = ogni sabato; samedi = questo sabato. Faire les courses = fare la spesa.",
+  quiz:[["Nous ___ en Italie.",["habitons","habitez","habitent"]],["Ils ___ français.",["parlent","parle","parlez"]],["___ tu travailles le samedi ?",["Est-ce que","Qu'est-ce que","Quoi"]],["Je ___ les courses le samedi.",["fais","vais","suis"]],["7 h 30 : il est sept heures et ___.",["demie","demi","moitié"]]],
+  acts:[{t:"verbi",ten:["pres"],l:"Verbi al présent"},{t:"suono",id:"muta",l:"Pronuncia: e muta e finali mute"},{t:"dialogo",lvl:"A1",l:"Ascolto A1"},{t:"scrivi",w:{id:"pw2",lvl:"A1",words:80,focus:"giornata",text:"Décrivez une journée typique de travail (80 mots).",it:"Descrivi una tua giornata di lavoro."},l:"Scrivi la tua giornata"}]},
+ {id:"u3",ph:"p1",lvl:"A1",title:"En ville",can:"Orientarti, chiedere la strada, dire cosa farai a breve.",
+  gram:"preposizioni di luogo · au, aux, du, des · futur proche · il y a",
+  spiega:"À + le diventa au, à + les diventa aux; de + le diventa du, de + les diventa des. Il futuro prossimo si fa con aller + infinito: je vais visiter. Il y a significa c'è o ci sono.",
+  ex:[["Je vais au marché, puis à la pharmacie.","Vado al mercato, poi in farmacia."],["La gare est à côté du parc.","La stazione è accanto al parco."],["Demain, nous allons visiter le musée.","Domani visitiamo il museo."],["Il y a une boulangerie en face de l'hôtel.","C'è un forno davanti all'albergo."]],
+  trap:"Paesi femminili con en (en France, en Italie), maschili con au (au Canada, au Portugal), città con à (à Lyon).",
+  quiz:[["Je vais ___ cinéma.",["au","à le","du"]],["L'hôtel est près ___ gare.",["de la","du","à la"]],["Ce soir, nous ___ dîner chez des amis.",["allons","avons","sommes"]],["Il ___ deux restaurants dans la rue.",["y a","est","a là"]],["Elle habite ___ Canada.",["au","en","à"]]],
+  acts:[{t:"suono",id:"nasali",l:"Pronuncia: vocali nasali"},{t:"dialogo",lvl:"A1",l:"Ascolto: chiedere la strada"},{t:"parla",ctx:"viaggio",l:"Conversazione: in viaggio"}]},
+ {id:"u4",ph:"p1",lvl:"A1",title:"Hier",can:"Raccontare cosa hai fatto ieri o nel fine settimana.",
+  gram:"passé composé con avoir ed être · participi irregolari",
+  spiega:"Il passé composé racconta fatti conclusi: ausiliare + participio. Quasi tutti i verbi usano avoir. Usano être i verbi di movimento e di cambiamento di stato (aller, venir, partir, arriver, entrer, sortir, naître, mourir, rester, tomber) e tutti i riflessivi; con être il participio si accorda con il soggetto.",
+  ex:[["Hier, j'ai travaillé jusqu'à vingt heures.","Ieri ho lavorato fino alle venti."],["Elle est partie à sept heures.","È partita alle sette."],["Nous avons pris le train de neuf heures.","Abbiamo preso il treno delle nove."],["Je me suis levé tôt.","Mi sono alzato presto."]],
+  trap:"«Je suis été» non esiste: si dice j'ai été. Participi da sapere: fait, pris, mis, dit, écrit, vu, eu, été, pu, voulu, dû, lu, venu.",
+  quiz:[["Hier, nous ___ au restaurant.",["sommes allés","avons allé","sommes allé"]],["J'___ un rapport.",["ai écrit","ai écrite","suis écrit"]],["Elle ___ à Paris en 2010.",["est née","a né","est né"]],["Ils ___ le métro.",["ont pris","sont pris","ont prendu"]],["J'___ malade la semaine dernière.",["ai été","suis été","avais été été"]]],
+  acts:[{t:"verbi",ten:["pc"],l:"Passé composé"},{t:"suono",id:"r",l:"Pronuncia: la r"},{t:"dialogo",lvl:"A1",l:"Ascolto: il fine settimana"},{t:"scrivi",w:{id:"pw4",lvl:"A1",words:80,focus:"passato",text:"Racontez votre week-end dernier (80 mots).",it:"Racconta il tuo ultimo fine settimana."},l:"Scrivi il tuo weekend"}]},
+ {id:"u5",ph:"p1",lvl:"A2",title:"Au marché et au restaurant",can:"Ordinare, comprare, parlare di quantità.",
+  gram:"partitivi du, de la, des · de dopo negazione e quantità · pronome en",
+  spiega:"Per una quantità non precisata si usa il partitivo: du pain, de la viande, de l'eau, des légumes. Dopo una negazione e dopo le quantità diventa de: pas de sucre, un kilo de pommes, beaucoup de travail. Il pronome en sostituisce de + nome: Tu veux du café ? Oui, j'en veux.",
+  ex:[["Je voudrais du pain et de la confiture.","Vorrei del pane e della marmellata."],["Il n'y a plus de lait.","Non c'è più latte."],["Un kilo de tomates, s'il vous plaît.","Un chilo di pomodori, per favore."],["Des enfants ? J'en ai un.","Figli? Ne ho uno."]],
+  trap:"In italiano spesso non si mette nulla (compro pane); in francese l'articolo è obbligatorio: j'achète du pain.",
+  quiz:[["Je prends ___ eau minérale.",["de l'","du","de la"]],["Nous n'avons pas ___ voiture.",["de","une","la"]],["Il y a beaucoup ___ travail.",["de","du","des"]],["Tu veux du café ? Oui, j'___ veux bien.",["en","le","y"]],["Elle achète ___ légumes au marché.",["des","de","les"]]],
+  acts:[{t:"suono",id:"liaison",l:"Pronuncia: liaison"},{t:"dialogo",lvl:"A1",l:"Ascolto: al bar"},{t:"parla",ctx:"viaggio",l:"Conversazione: al ristorante"},{t:"parole",l:"Ripasso parole"}]},
+
+ {id:"u6",ph:"p2",lvl:"A2",title:"Décrire",can:"Descrivere persone, luoghi e case; fare confronti.",
+  gram:"accordo e posizione degli aggettivi · comparativo · meilleur e mieux",
+  spiega:"L'aggettivo si accorda: grand, grande, grands, grandes. Di solito va dopo il nome (une maison moderne), ma alcuni brevi e frequenti vanno prima: beau, bon, grand, petit, jeune, vieux, nouveau, joli. Comparativo: plus, moins, aussi + aggettivo + que; bon diventa meilleur, bien diventa mieux.",
+  ex:[["C'est une belle maison ancienne.","È una bella casa antica."],["Cet appartement est plus lumineux que l'autre.","Questo appartamento è più luminoso dell'altro."],["Ce quartier est aussi calme que le nôtre.","Questo quartiere è tranquillo quanto il nostro."],["Ce restaurant est meilleur.","Questo ristorante è migliore."]],
+  trap:"Beau, nouveau, vieux davanti a vocale diventano bel, nouvel, vieil: un bel appartement, un vieil immeuble.",
+  quiz:[["C'est une ___ idée.",["bonne","bon","bien"]],["Un ___ appartement.",["bel","beau","belle"]],["Ce vin est ___ que l'autre.",["meilleur","plus bon","mieux"]],["Elle parle ___ que moi.",["mieux","meilleur","plus bien"]],["Des maisons ___.",["modernes","moderne","modernas"]]],
+  acts:[{t:"dialogo",lvl:"A2",l:"Ascolto: visitare un appartamento"},{t:"parla",ctx:"casa",l:"Conversazione: casa"},{t:"parole",l:"Ripasso parole"}]},
+ {id:"u7",ph:"p2",lvl:"A2",title:"Souvenirs",can:"Raccontare ricordi e abitudini del passato.",
+  gram:"imparfait · imparfait e passé composé insieme",
+  spiega:"L'imparfait descrive sfondo, abitudini e stati nel passato; il passé composé racconta l'azione puntuale che fa avanzare la storia. Si forma dalla radice di nous al presente + -ais, -ais, -ait, -ions, -iez, -aient (unica eccezione: être, j'étais).",
+  ex:[["Quand j'étais enfant, nous allions à la mer chaque été.","Da bambino andavamo al mare ogni estate."],["Il pleuvait quand je suis arrivé.","Pioveva quando sono arrivato."],["Avant, je travaillais à Rome.","Prima lavoravo a Roma."],["Je regardais la télé quand le téléphone a sonné.","Guardavo la tv quando ha suonato il telefono."]],
+  trap:"L'uso è come in italiano (imperfetto e passato prossimo): la difficoltà è nelle forme, non nella scelta.",
+  quiz:[["Quand j'étais petit, je ___ au football.",["jouais","ai joué","jouerai"]],["Il ___ beau quand nous sommes sortis.",["faisait","a fait","fait"]],["Nous ___ quand il est arrivé.",["dînions","avons dîné","dînons"]],["Hier soir, j'___ un film.",["ai vu","voyais","vois"]],["Avant, ils ___ à Lyon.",["habitaient","ont habité","habitent"]]],
+  acts:[{t:"verbi",ten:["imp","pc"],l:"Imparfait e passé composé"},{t:"dialogo",lvl:"A2",l:"Ascolto A2"},{t:"scrivi",w:{id:"pw7",lvl:"A2",words:100,focus:"passato",text:"Racontez un souvenir d'enfance : où vous étiez, ce que vous faisiez, ce qui s'est passé (100 mots).",it:"Racconta un ricordo d'infanzia."},l:"Scrivi un ricordo"}]},
+ {id:"u8",ph:"p2",lvl:"A2",title:"Projets",can:"Parlare di progetti e previsioni.",
+  gram:"futur simple · radici irregolari · quand + futuro",
+  spiega:"Il futur simple si forma con l'infinito + -ai, -as, -a, -ons, -ez, -ont (je parlerai, je finirai); i verbi in -re perdono la e (je prendrai). Radici irregolari: ser- (être), aur- (avoir), ir- (aller), fer- (faire), viendr- (venir), pourr- (pouvoir), voudr- (vouloir), devr- (devoir), saur- (savoir), verr- (voir), enverr- (envoyer).",
+  ex:[["Nous déménagerons l'été prochain.","Traslocheremo la prossima estate."],["Quand j'aurai le temps, je t'appellerai.","Quando avrò tempo ti chiamerò."],["Le chantier commencera en mars.","Il cantiere comincerà a marzo."],["Tu verras, ce sera facile.","Vedrai, sarà facile."]],
+  trap:"Dopo quand si usa il futuro anche nella subordinata: quand je serai en France (non «quand je suis»).",
+  quiz:[["Demain, il ___ beau.",["fera","faira","fait"]],["Nous ___ en juillet.",["partirons","partons","partions"]],["Quand tu ___ à Paris, appelle-moi.",["seras","es","étais"]],["Je ___ le rapport vendredi.",["enverrai","envoierai","envoyais"]],["Ils ___ venir ?",["pourront","pouveront","peuvront"]]],
+  acts:[{t:"verbi",ten:["fut"],l:"Futur simple"},{t:"dialogo",lvl:"B1",l:"Ascolto: riunione di progetto"},{t:"scrivi",w:{id:"pw8",lvl:"A2",words:100,focus:"futuro",text:"Écrivez un message à un ami pour lui présenter vos projets pour l'année prochaine (100 mots).",it:"I tuoi progetti per l'anno prossimo."},l:"Scrivi i tuoi progetti"}]},
+ {id:"u9",ph:"p2",lvl:"A2",title:"Les pronoms",can:"Evitare ripetizioni usando i pronomi.",
+  gram:"le, la, les · lui, leur · y · en · posizione con il passé composé",
+  spiega:"Il pronome va prima del verbo: je le vois, je lui parle. Oggetto diretto: me, te, le, la, nous, vous, les. Oggetto indiretto (à + persona): me, te, lui, nous, vous, leur. Y sostituisce un luogo o à + cosa (j'y vais, j'y pense); en sostituisce de + cosa o una quantità. Al passé composé il pronome va prima dell'ausiliare: je l'ai vu.",
+  ex:[["Tu connais Marc ? Oui, je le connais bien.","Conosci Marc? Sì, lo conosco bene."],["J'ai téléphoné à mes parents : je leur ai annoncé la nouvelle.","Ho telefonato ai miei: ho dato loro la notizia."],["Tu vas au bureau ? Oui, j'y vais.","Vai in ufficio? Sì, ci vado."],["Des photos ? J'en ai pris beaucoup.","Foto? Ne ho fatte molte."]],
+  trap:"Leur come pronome non prende mai la s. Lui vale sia per «gli» sia per «le».",
+  quiz:[["Ce film, je l'___ vu hier.",["ai","lui","le"]],["Je parle à Sophie : je ___ parle.",["lui","la","leur"]],["Mes collègues ? Je ___ ai écrit un mail.",["leur","les","leurs"]],["Tu vas à la banque ? Oui, j'___ vais.",["y","en","la"]],["Du café ? Non merci, j'___ ai déjà bu.",["en","y","le"]]],
+  acts:[{t:"dialogo",lvl:"A2",l:"Ascolto A2"},{t:"parla",ctx:"amici",l:"Conversazione: amici"},{t:"parole",l:"Ripasso parole"}]},
+ {id:"u10",ph:"p2",lvl:"A2",title:"Demander poliment",can:"Chiedere, consigliare e dare istruzioni con il registro giusto.",
+  gram:"imperativo · condizionale di cortesia · devoir e il faut",
+  spiega:"L'imperativo ha tre forme (parle, parlons, parlez); i verbi in -er perdono la s alla seconda persona: écoute ! Per chiedere con cortesia si usa il condizionale: je voudrais, pourriez-vous, j'aimerais. Il faut + infinito esprime un obbligo generale; tu devrais + infinito un consiglio.",
+  ex:[["Pourriez-vous m'envoyer le devis ?","Potrebbe mandarmi il preventivo?"],["Je voudrais un rendez-vous pour jeudi.","Vorrei un appuntamento per giovedì."],["Prenez la deuxième rue à droite.","Prenda la seconda strada a destra."],["Il faut réserver à l'avance.","Bisogna prenotare in anticipo."]],
+  trap:"Vous è il lei di cortesia: in una mail di lavoro si usa sempre, anche se l'interlocutore è giovane.",
+  quiz:[["___-moi, s'il vous plaît.",["Excusez","Excuser","Excusé"]],["Je ___ réserver une table pour deux.",["voudrais","veux que","voulais que"]],["___-vous m'aider ?",["Pourriez","Pouviez","Pourrez"]],["Il ___ arriver à l'heure.",["faut","doit","fallait que"]],["Tu ___ te reposer.",["devrais","devras que","dois que"]]],
+  acts:[{t:"parla",ctx:"casa",l:"Conversazione: chiedere informazioni"},{t:"scrivi",w:{id:"pw10",lvl:"A2",words:100,focus:"mail formale",text:"Écrivez un mail formel à une agence immobilière pour demander des informations sur un appartement : loyer, charges, date de disponibilité, visite (100 mots).",it:"Mail formale a un'agenzia immobiliare."},l:"Scrivi una mail formale"},{t:"dialogo",lvl:"A2",l:"Ascolto: in albergo"}]},
+
+ {id:"u11",ph:"p3",lvl:"B1",title:"Les relatifs",can:"Costruire frasi più lunghe e precise.",
+  gram:"qui · que · où · dont",
+  spiega:"Qui è soggetto (l'homme qui parle), que è complemento oggetto (le livre que je lis), où indica luogo o tempo (la ville où j'habite, le jour où il est arrivé), dont sostituisce de + nome (le projet dont je t'ai parlé, perché si dice parler de).",
+  ex:[["C'est l'architecte qui a dessiné ce bâtiment.","È l'architetto che ha disegnato questo edificio."],["Le rapport que tu m'as envoyé est clair.","La relazione che mi hai mandato è chiara."],["La maison où nous habitons est ancienne.","La casa dove abitiamo è antica."],["C'est un problème dont on parle beaucoup.","È un problema di cui si parla molto."]],
+  trap:"Dont va con i verbi che reggono de: parler de, avoir besoin de, être content de, se souvenir de.",
+  quiz:[["Le collègue ___ travaille avec moi est canadien.",["qui","que","dont"]],["Le livre ___ je lis est passionnant.",["que","qui","dont"]],["C'est la ville ___ je suis né.",["où","que","dont"]],["Voici l'outil ___ j'ai besoin.",["dont","que","où"]],["Le jour ___ il est arrivé, il pleuvait.",["où","que","quand"]]],
+  acts:[{t:"dialogo",lvl:"B1",l:"Ascolto B1"},{t:"lettura",id:"r1",l:"Lettura: avviso della scuola"},{t:"parole",l:"Ripasso parole"}]},
+ {id:"u12",ph:"p3",lvl:"B1",title:"Raconter une expérience",can:"Raccontare un'esperienza ordinando i fatti nel tempo.",
+  gram:"plus-que-parfait · accordo del participio passato",
+  spiega:"Il plus-que-parfait indica un fatto anteriore a un altro fatto passato: imparfait di avoir o être + participio (j'avais fini, elle était partie). Con être il participio si accorda con il soggetto; con avoir si accorda con il complemento oggetto solo se questo viene prima del verbo (la lettre que j'ai écrite).",
+  ex:[["Quand je suis arrivé, la réunion avait déjà commencé.","Quando sono arrivato la riunione era già cominciata."],["Elle m'a dit qu'elle avait perdu ses clés.","Mi ha detto che aveva perso le chiavi."],["Les photos que j'ai prises sont floues.","Le foto che ho fatto sono sfocate."],["Ils étaient partis avant la pluie.","Erano partiti prima della pioggia."]],
+  trap:"L'accordo con avoir si vede soprattutto allo scritto: è un criterio della griglia DELF (morfosintassi).",
+  quiz:[["Quand nous sommes arrivés, le film ___ commencé.",["avait","a","était"]],["Elles ___ parties tôt.",["étaient","avaient","ont"]],["Les fenêtres que nous avons ___.",["changées","changé","changés"]],["Il pensait que tu ___ déjà mangé.",["avais","as","aurais été"]],["La maison qu'ils ont ___ est magnifique.",["achetée","acheté","achetés"]]],
+  acts:[{t:"verbi",ten:["pc","imp"],l:"Passato: ripasso"},{t:"dialogo",lvl:"B1",l:"Ascolto: in cantiere"},{t:"scrivi",w:{id:"pw12",lvl:"B1",words:160,focus:"racconto",text:"Racontez une expérience professionnelle difficile et ce que vous en avez appris (160 mots).",it:"Un'esperienza di lavoro difficile e cosa hai imparato."},l:"Scrivi un'esperienza"}]},
+ {id:"u13",ph:"p3",lvl:"B1",title:"Le subjonctif",can:"Esprimere necessità, desiderio, sentimento e opinione.",
+  gram:"congiuntivo presente · indicativo dopo je pense que",
+  spiega:"Il congiuntivo si usa dopo necessità (il faut que), volontà (je veux que, je souhaite que), sentimento (je suis content que, j'ai peur que) e alcune congiunzioni (pour que, avant que, bien que). Forma: radice di ils al presente + -e, -es, -e, -ions, -iez, -ent. Irregolari: que je sois, que j'aie, que j'aille, que je fasse, que je puisse, que je sache, que je veuille.",
+  ex:[["Il faut que tu viennes demain.","Bisogna che tu venga domani."],["Je veux que le rapport soit prêt lundi.","Voglio che la relazione sia pronta lunedì."],["Je suis content que vous puissiez venir.","Sono contento che possiate venire."],["Je pense qu'il a raison.","Penso che abbia ragione."]],
+  trap:"Dopo je pense que, je crois que, je trouve que si usa l'indicativo, al contrario dell'italiano. Il congiuntivo torna nella forma negativa: je ne pense pas qu'il ait raison.",
+  quiz:[["Il faut que nous ___ ce dossier.",["finissions","finissons","finirons"]],["Je veux que tu ___ à l'heure.",["sois","es","seras"]],["Je pense qu'il ___ raison.",["a","ait","avoir"]],["Je ne crois pas qu'il ___ venir.",["puisse","peut","pourra"]],["Bien qu'elle ___ fatiguée, elle travaille.",["soit","est","était"]]],
+  acts:[{t:"parla",ctx:"lavoro",l:"Conversazione: in riunione"},{t:"dialogo",lvl:"B1",l:"Ascolto: incontro a scuola"},{t:"parole",l:"Ripasso parole"}]},
+ {id:"u14",ph:"p3",lvl:"B1",title:"Hypothèses",can:"Fare ipotesi reali e irreali.",
+  gram:"si + présent · si + imparfait · si + plus-que-parfait",
+  spiega:"Tre schemi: si + presente → presente, futuro o imperativo (si tu veux, on ira); si + imparfait → conditionnel présent (si j'avais le temps, j'apprendrais); si + plus-que-parfait → conditionnel passé (si j'avais su, je serais venu). Dopo si non vanno mai il condizionale né il futuro.",
+  ex:[["S'il pleut, nous resterons à la maison.","Se piove resteremo a casa."],["Si j'avais plus de temps, je ferais du sport.","Se avessi più tempo farei sport."],["Si le client valide, les travaux commenceront en mars.","Se il cliente approva, i lavori inizieranno a marzo."],["Que feriez-vous si vous gagniez au loto ?","Cosa fareste se vinceste alla lotteria?"]],
+  trap:"«Se avessi» si dice si j'avais (imparfait), non con un congiuntivo.",
+  quiz:[["Si j'___ le temps, je viendrais.",["avais","aurais","ai eu"]],["S'il fait beau demain, nous ___ à la plage.",["irons","irions","allions"]],["Si tu travaillais moins, tu ___ moins fatigué.",["serais","seras","étais"]],["Si vous avez des questions, ___-moi.",["appelez","appelleriez","appeliez"]],["Je ___ content s'il venait.",["serais","serai","étais"]]],
+  acts:[{t:"orale",o:{id:"po14",lvl:"B1",prep:60,text:"Si vous pouviez changer une chose dans votre ville, que feriez-vous ? Expliquez pourquoi."},l:"Orale: un'ipotesi"},{t:"dialogo",lvl:"B1",l:"Ascolto B1"}]},
+ {id:"u15",ph:"p3",lvl:"B1",title:"Discours rapporté",can:"Riferire ciò che altri hanno detto o chiesto.",
+  gram:"discorso indiretto · concordanza dei tempi · domande indirette",
+  spiega:"Per riferire: il dit que + frase. Se il verbo introduttivo è al passato, i tempi slittano: présent → imparfait, passé composé → plus-que-parfait, futur → conditionnel. Le domande indirette usano si, ce que, où, quand: il m'a demandé si j'étais libre.",
+  ex:[["Le client a dit qu'il était satisfait.","Il cliente ha detto che era soddisfatto."],["Elle m'a expliqué qu'elle avait raté le train.","Mi ha spiegato che aveva perso il treno."],["Il a promis qu'il enverrait le devis.","Ha promesso che avrebbe mandato il preventivo."],["Je lui ai demandé ce qu'il voulait.","Gli ho chiesto cosa voleva."]],
+  trap:"Il futuro nel passato è un condizionale presente (il enverrait), non passato come in italiano (avrebbe mandato).",
+  quiz:[["Il a dit qu'il ___ fatigué.",["était","est","sera"]],["Elle m'a dit qu'elle ___ le dossier la veille.",["avait envoyé","envoie","enverra"]],["Ils ont annoncé qu'ils ___ en juin.",["viendraient","viendront","sont venus"]],["Il m'a demandé ___ je voulais.",["ce que","qu'est-ce que","que"]],["Je lui ai demandé ___ il était libre.",["s'","si que","est-ce qu'"]]],
+  acts:[{t:"dialogo",lvl:"B1",l:"Ascolto: riunione"},{t:"parla",ctx:"lavoro",l:"Conversazione: riferire una riunione"}]},
+ {id:"u16",ph:"p3",lvl:"B1",title:"Cause et conséquence",can:"Spiegare cause e conseguenze (descrittore DELF B2).",
+  gram:"parce que, puisque, comme, grâce à, à cause de · donc, c'est pourquoi, par conséquent",
+  spiega:"Causa: parce que (risponde a pourquoi), puisque (causa già nota), comme (a inizio frase), grâce à (causa positiva), à cause de (negativa), en raison de (formale). Conseguenza: donc, alors, c'est pourquoi, par conséquent, si bien que.",
+  ex:[["Comme il pleuvait, le chantier a été suspendu.","Siccome pioveva, il cantiere è stato sospeso."],["Grâce à l'isolation, la facture a baissé de trente pour cent.","Grazie all'isolamento la bolletta è scesa del trenta per cento."],["Le délai était court, c'est pourquoi nous avons travaillé le samedi.","La scadenza era vicina, per questo abbiamo lavorato il sabato."],["Puisque tout le monde est là, commençons.","Visto che ci sono tutti, cominciamo."]],
+  trap:"Car è solo scritto e mai a inizio frase; comme a inizio frase sostituisce parce que.",
+  quiz:[["___ il était malade, il n'est pas venu.",["Comme","Parce que","Car"]],["Nous avons réussi ___ ton aide.",["grâce à","à cause de","parce que"]],["Le vol a été annulé ___ la neige.",["à cause de","grâce à","puisque"]],["Il est tard, ___ je rentre.",["donc","parce que","puisque"]],["Je ne viens pas ___ je suis fatigué.",["parce que","à cause de","grâce à"]]],
+  acts:[{t:"scrivi",w:{id:"pw16",lvl:"B1",words:180,focus:"lettera",text:"Votre ville veut fermer une école de quartier. Écrivez au maire pour expliquer les conséquences de cette décision et proposer une solution (180 mots).",it:"Lettera al sindaco: cause e conseguenze."},l:"Scrivi al sindaco"},{t:"lettura",id:"r1",l:"Lettura B1"},{t:"orale",o:{id:"o1",lvl:"B1",prep:60,text:"Présentez-vous et parlez de votre travail : ce que vous faites, ce que vous aimez, ce que vous voudriez changer."},l:"Orale: parlare del lavoro"}]},
+
+ {id:"u17",ph:"p4",lvl:"B2",title:"Concession et opposition",can:"Ammettere un argomento contrario senza cambiare posizione.",
+  gram:"bien que + congiuntivo · malgré · même si · pourtant, cependant, toutefois · alors que",
+  spiega:"Concessione = riconoscere un fatto senza cambiare conclusione. Bien que e quoique + congiuntivo; même si + indicativo; malgré + nome; pourtant, cependant, toutefois, néanmoins collegano due frasi; alors que e tandis que confrontano. La griglia orale del DELF B2 la chiede esplicitamente.",
+  ex:[["Bien que le projet soit coûteux, il est nécessaire.","Benché il progetto sia costoso, è necessario."],["Malgré les difficultés, nous avons respecté les délais.","Nonostante le difficoltà abbiamo rispettato i tempi."],["Même si le loyer est élevé, le quartier vaut la peine.","Anche se l'affitto è alto, il quartiere vale la pena."],["Le télétravail est pratique ; toutefois, il peut isoler.","Il telelavoro è comodo; tuttavia può isolare."]],
+  trap:"«Malgré que» è da evitare: si dice bien que + congiuntivo oppure malgré + nome.",
+  quiz:[["___ il soit tard, nous continuons.",["Bien qu'","Même s'","Malgré qu'"]],["___ la pluie, ils sont sortis.",["Malgré","Bien que","Même si"]],["___ le loyer est cher, je le prends.",["Même si","Bien que","Malgré"]],["Il a beaucoup travaillé ; ___, il n'a pas réussi.",["pourtant","donc","car"]],["Elle aime la ville, ___ son mari préfère la campagne.",["alors que","puisque","donc"]]],
+  acts:[{t:"dialogo",lvl:"B2",l:"Ascolto B2: il telelavoro"},{t:"orale",o:{id:"o3",lvl:"B2",prep:180,text:"« Le travail à distance isole les salariés. » Êtes-vous d'accord ? Justifiez votre position."},l:"Orale: difendere un'opinione"},{t:"parole",l:"Ripasso connettivi"}]},
+ {id:"u18",ph:"p4",lvl:"B2",title:"Regrets et reproches",can:"Esprimere rimpianti, rimproveri, ipotesi sul passato.",
+  gram:"conditionnel passé · si + plus-que-parfait · notizia non confermata",
+  spiega:"Il conditionnel passé (j'aurais fait, je serais venu) esprime un rimpianto, un rimprovero (tu aurais dû...), l'ipotesi irreale nel passato (si j'avais su, j'aurais...) e, nei giornali, un'informazione non confermata (l'incendie aurait fait deux victimes).",
+  ex:[["J'aurais dû vérifier les mesures.","Avrei dovuto verificare le misure."],["Si nous avions isolé la toiture, nous aurions économisé beaucoup.","Se avessimo isolato il tetto avremmo risparmiato molto."],["Vous auriez pu me prévenir !","Avrebbe potuto avvisarmi!"],["Selon la presse, le projet aurait coûté deux millions.","Secondo la stampa il progetto sarebbe costato due milioni."]],
+  trap:"Nei notiziari radio (prova di ascolto) il condizionale segnala che l'informazione non è confermata.",
+  quiz:[["Si j'avais su, je ___ plus tôt.",["serais venu","viendrais","suis venu"]],["Tu ___ me le dire !",["aurais pu","pourrais avoir","as pu avoir"]],["Si nous ___ plus tôt, nous aurions eu le train.",["étions partis","serions partis","partions"]],["Selon les médias, le ministre ___ démissionner.",["aurait décidé de","décidera de","décidait"]],["J'___ aimé vous rencontrer.",["aurais","avais","aurai"]]],
+  acts:[{t:"dialogo",lvl:"B2",l:"Ascolto B2: reportage"},{t:"scrivi",w:{id:"pw18",lvl:"B2",words:200,focus:"bilancio",text:"Vous avez mené un projet qui ne s'est pas passé comme prévu. Écrivez un article pour le blog de votre entreprise : ce qui s'est passé, ce que vous auriez dû faire, ce que vous ferez la prochaine fois (200 mots).",it:"Bilancio di un progetto andato male."},l:"Scrivi un bilancio"}]},
+ {id:"u19",ph:"p4",lvl:"B2",title:"Style formel",can:"Scrivere testi formali compatti e precisi.",
+  gram:"forma passiva · nominalizzazione",
+  spiega:"Passivo: être + participio, agente con par (le rapport a été rédigé par l'équipe). Nella lingua formale si trasforma spesso un verbo in nome: construire → la construction, réduire → la réduction, décider → la décision. Rende i testi più compatti: utile nella lettera formale e nell'articolo.",
+  ex:[["Les travaux seront terminés en mai.","I lavori saranno terminati a maggio."],["Le bâtiment a été construit en 1975.","L'edificio è stato costruito nel 1975."],["La réduction des consommations est notre priorité.","La riduzione dei consumi è la nostra priorità."],["Suite à la décision du conseil, la réunion est reportée.","In seguito alla decisione del consiglio la riunione è rinviata."]],
+  trap:"Il passivo francese usa solo être (mai «venire»): la porte est fermée.",
+  quiz:[["Le projet ___ par le conseil l'an dernier.",["a été approuvé","a approuvé","est approuvant"]],["Les fenêtres ___ remplacées demain.",["seront","auront","vont été"]],["Nome da « augmenter » :",["l'augmentation","l'augmentement","l'augmentage"]],["Nome da « réduire » :",["la réduction","la réduisance","le réduit"]],["Cette maison ___ en 1960.",["a été construite","a construit","est construisant"]]],
+  acts:[{t:"scrivi",w:{id:"w4",lvl:"B2",exam:"delf",words:250,focus:"lettera formale",text:"Votre direction veut supprimer le télétravail. Vous écrivez une lettre formelle à la direction pour défendre le maintien de deux jours de télétravail par semaine.",it:"Lettera formale alla direzione sul telelavoro."},l:"Lettera formale (250 parole)"},{t:"lettura",id:"r2",l:"Lettura B2: densificare le città"}]},
+ {id:"u20",ph:"p4",lvl:"B2",title:"Relatifs composés et doubles pronoms",can:"Gestire frasi complesse senza ripetizioni.",
+  gram:"lequel, auquel, duquel · ordine dei doppi pronomi",
+  spiega:"Dopo una preposizione si usa lequel, laquelle, lesquels, lesquelles: la raison pour laquelle, le projet sur lequel je travaille. Con à e de si contraggono: auquel, duquel. Doppi pronomi: me, te, nous, vous prima di le, la, les, che vengono prima di lui, leur, poi y, poi en: je te le donne, je le lui envoie, il y en a.",
+  ex:[["Voici la raison pour laquelle j'ai refusé.","Ecco il motivo per cui ho rifiutato."],["C'est le dossier auquel je pensais.","È la pratica a cui pensavo."],["Le devis ? Je le lui ai envoyé hier.","Il preventivo? Gliel'ho mandato ieri."],["Des problèmes ? Il y en a toujours.","Problemi? Ce ne sono sempre."]],
+  trap:"Gliel'ho dato = je le lui ai donné: l'ordine è inverso rispetto all'italiano.",
+  quiz:[["La société pour ___ je travaille est petite.",["laquelle","lequel","qui que"]],["Le projet ___ je pense est ambitieux.",["auquel","duquel","à lequel"]],["Les clés ? Je ___ ai données.",["les lui","lui les","leur les"]],["Du pain ? Je ___ donne.",["t'en","en te","te le"]],["Le parc près ___ j'habite est grand.",["duquel","dont","de lequel"]]],
+  acts:[{t:"dialogo",lvl:"B2",l:"Ascolto B2"},{t:"parla",ctx:"cantiere",l:"Conversazione: in cantiere"},{t:"parole",l:"Ripasso parole"}]},
+ {id:"u21",ph:"p4",lvl:"B2",title:"But, temps et manière",can:"Esprimere scopo, tempo e modo con precisione.",
+  gram:"gérondif · pour que / afin de · avant que, dès que, pendant que",
+  spiega:"Il gerundio (en + participio presente: en travaillant) indica simultaneità o modo. Scopo: pour o afin de + infinito con lo stesso soggetto, pour que o afin que + congiuntivo con soggetti diversi. Tempo: avant que + congiuntivo; après que, dès que, pendant que + indicativo.",
+  ex:[["J'écoute des podcasts en conduisant.","Ascolto podcast mentre guido."],["Je vous écris afin de vous informer d'un retard.","Le scrivo per informarla di un ritardo."],["Je vous envoie le plan pour que vous puissiez le vérifier.","Le mando la pianta perché possa verificarla."],["Avant que le chantier commence, il faut le permis.","Prima che il cantiere inizi serve il permesso."]],
+  trap:"Avant que vuole il congiuntivo, après que l'indicativo.",
+  quiz:[["Il s'est blessé ___ du vélo.",["en faisant","en faire","faisant en"]],["Je travaille ___ payer mes études.",["pour","pour que","afin que"]],["Je parle lentement pour que tu ___.",["comprennes","comprends","comprendras"]],["Partons avant qu'il ___ à pleuvoir.",["commence","commencera","a commencé"]],["Je t'appelle dès que je ___ arrivé.",["suis","sois","serais"]]],
+  acts:[{t:"scrivi",w:{id:"w3",lvl:"B2",exam:"delf",words:250,focus:"argomentazione",text:"Dans votre ville, la mairie envisage d'interdire les voitures dans le centre historique. Vous écrivez au courrier des lecteurs du journal local pour donner votre opinion de manière argumentée.",it:"Lettera al giornale: chiusura del centro alle auto."},l:"Testo argomentativo (250 parole)"},{t:"dialogo",lvl:"B2",l:"Ascolto B2"}]},
+ {id:"u22",ph:"p4",lvl:"B2",title:"Argumenter et nuancer",can:"Costruire un testo o un discorso argomentativo completo.",
+  gram:"struttura del testo argomentativo · modalizzatori · formule della lettera formale",
+  spiega:"Un testo argomentativo B2 ha introduzione (tema e problematica), sviluppo in 2-3 argomenti con esempi, una concessione, conclusione con la tua posizione. Per sfumare: il semble que e il est possible que + congiuntivo; il est probable que + indicativo; dans une certaine mesure, à mon sens. Lettera formale: «Madame, Monsieur,» e in chiusura «Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.»",
+  ex:[["D'une part, ... ; d'autre part, ...","Da un lato...; dall'altro..."],["Il est possible que cette mesure soit insuffisante.","È possibile che questa misura sia insufficiente."],["Il est probable que les prix vont augmenter.","È probabile che i prezzi aumentino."],["En définitive, je reste convaincu que cette solution est la meilleure.","In definitiva resto convinto che questa soluzione sia la migliore."]],
+  trap:"Il est probable que vuole l'indicativo, il est possible que il congiuntivo.",
+  quiz:[["Il est possible que la réunion ___ annulée.",["soit","est","sera"]],["Il est probable que le projet ___ retardé.",["sera","soit","être"]],["Chiusura di una lettera formale:",["Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.","Bisous et à bientôt !","Salut, merci beaucoup."]],["___, le télétravail réduit les déplacements ; ___, il peut isoler.",["D'une part … d'autre part","Premièrement … après","Avant … ensuite"]],["Il semble que les habitants ___ satisfaits.",["soient","sont","seront"]]],
+  acts:[{t:"orale",o:{id:"o2",lvl:"B2",prep:180,text:"« Il faudrait rendre les transports en commun gratuits. » Présentez votre point de vue et défendez-le avec des exemples."},l:"Orale: punto di vista"},{t:"scrivi",w:{id:"w6",lvl:"B2",exam:"tcf",words:180,focus:"opinione",text:"« Les enfants passent trop de temps devant les écrans. » Donnez votre opinion en vous appuyant sur des exemples. (120 à 180 mots)",it:"Testo d'opinione."},l:"Testo d'opinione"}]},
+
+ {id:"u23",ph:"p5",lvl:"EX",title:"Compréhension de l'oral",can:"Capire documenti audio autentici nei tempi dell'esame.",ex_unit:"co"},
+ {id:"u24",ph:"p5",lvl:"EX",title:"Compréhension des écrits",can:"Leggere testi informativi e argomentativi gestendo il tempo.",ex_unit:"ce"},
+ {id:"u25",ph:"p5",lvl:"EX",title:"Production écrite",can:"Scrivere nel formato e con il numero di parole richiesti.",ex_unit:"ee"},
+ {id:"u26",ph:"p5",lvl:"EX",title:"Production orale",can:"Parlare nel formato della prova orale, a tempo.",ex_unit:"eo"},
+ {id:"u27",ph:"p5",lvl:"EX",title:"Examen blanc",can:"Una simulazione completa delle quattro prove.",ex_unit:"blanc"}
+];
+/* Contenuti della fase d'esame, diversi per DELF B2 e TCF Canada (fonte: France Éducation international). */
+const EXAM_UNITS={
+ delf:{
+  co:{spiega:"Circa 30 minuti. Documenti radio autentici (interviste, servizi, notiziari): uno lungo e altri brevi. Le domande sono a scelta multipla o a risposta breve. Esistono due formati ufficiali: in uno alcuni documenti si ascoltano una sola volta, quindi allenati anche all'ascolto unico.",
+      tips:["Leggi tutte le domande prima dell'ascolto e sottolinea le parole chiave.","Durante il primo ascolto annota solo parole e numeri.","Attento al condizionale nei notiziari: indica un'informazione non confermata."],
+      quiz:[["Quanto dura la prova di comprensione orale del DELF B2?",["Circa 30 minuti","2 ore","10 minuti"]],["Che tipo di documenti si ascoltano?",["Documenti radio autentici","Solo dialoghi registrati in studio","Canzoni"]],["Punteggio minimo per non essere eliminati in una prova:",["5/25","10/25","12,5/25"]]],
+      acts:[{t:"dialogo",lvl:"B2",l:"Ascolto B2 a velocità piena"},{t:"link",href:"https://francaisfacile.rfi.fr/fr/",l:"RFI – Le français facile (esercizi d'ascolto)"},{t:"link",href:"https://www.france-education-international.fr/diplome/delf-tout-public/niveau-b2/exemples-sujets",l:"Esempi ufficiali DELF B2 con audio"}]},
+  ce:{spiega:"1 ora. Più documenti: un testo informativo sulla Francia o lo spazio francofono e un testo argomentativo. Domande a scelta multipla e risposte brevi, a volte con giustificazione tratta dal testo.",
+      tips:["Leggi prima le domande, poi il testo.","Cerca la tesi dell'autore e i connettivi (cependant, en revanche, donc).","Tieni 5 minuti alla fine per ricontrollare."],
+      quiz:[["Quanto dura la comprensione scritta del DELF B2?",["1 ora","30 minuti","2 ore"]],["Che tipo di testo è sempre presente?",["Un testo argomentativo","Una poesia","Una ricetta"]]],
+      acts:[{t:"lettura",id:"r2",l:"Lettura B2: densificare le città"},{t:"lettura",id:"r1",l:"Lettura B1: avviso della scuola"}]},
+  ee:{spiega:"1 ora, un solo testo di almeno 250 parole: presa di posizione argomentata (contributo a un dibattito su un forum o lettera formale). La griglia valuta: realizzazione del compito (tipo di testo, tema, 250 parole, argomenti ed esempi), coerenza e coesione (paragrafi, connettivi, punteggiatura), adeguatezza sociolinguistica (formule e registro), lessico, morfosintassi (frasi complesse, tempi del passato, condizionale, congiuntivo, accordi).",
+      tips:["Piano: introduzione con la problematica, 2-3 paragrafi con un argomento e un esempio ciascuno, una concessione, conclusione.","Lettera formale: formula d'apertura e di chiusura, registro con vous.","Conta le parole: sotto le 250 perdi punti."],
+      quiz:[["Numero minimo di parole nella produzione scritta DELF B2:",["250","150","400"]],["Quale criterio fa parte della griglia?",["Adeguatezza sociolinguistica","Bella grafia","Numero di citazioni letterarie"]]],
+      acts:[{t:"scrivi",wid:"w3",l:"Testo argomentativo (250 parole)"},{t:"scrivi",wid:"w4",l:"Lettera formale (250 parole)"}]},
+  eo:{spiega:"30 minuti di preparazione, poi 20 minuti davanti a due esaminatori. Parte 1, monologo: a partire da un breve documento ricavi il tema, formuli una problematica, annunci il piano e presenti un punto di vista argomentato con esempi. Parte 2, interazione: l'esaminatore ti contraddice; devi confermare, sfumare, concedere (cependant, toutefois, malgré) e difendere la tua posizione.",
+      tips:["In preparazione scrivi solo il piano, non il testo intero.","Apri con: Le document traite de... La question qui se pose est la suivante : ...","In interazione riformula l'obiezione prima di rispondere."],
+      quiz:[["Quanto dura la preparazione della prova orale DELF B2?",["30 minuti","2 minuti","1 ora"]],["Cosa si chiede nella seconda parte?",["Difendere il proprio punto di vista nell'interazione","Leggere ad alta voce un testo","Fare un riassunto scritto"]]],
+      acts:[{t:"orale",o:{id:"pod1",lvl:"B2",prep:1800,text:"Document : « De plus en plus d'entreprises proposent la semaine de quatre jours. » Dégagez le problème soulevé par ce document, puis présentez votre opinion de façon argumentée."},l:"Monologo con documento (30 min di preparazione)"},{t:"parla",scene:"Tu es examinateur du DELF B2. Le candidat vient de défendre la semaine de quatre jours. Contredis-le avec des arguments précis, pousse-le à nuancer et à défendre sa position.",l:"Interazione: l'esaminatore ti contraddice"}]},
+  blanc:{spiega:"Simulazione completa: ascolto (30 min), lettura (1 ora), scrittura (1 ora), orale (30 + 20 min). Fallo in condizioni reali, senza pause e senza dizionario. Prima di iscriverti punta ad almeno 60/100 nelle simulazioni, con nessuna prova sotto 10/25: è un margine di sicurezza rispetto alle soglie ufficiali (50/100, 5/25).",
+      tips:["Ripeti la simulazione ogni 2-3 settimane nell'ultima fase.","Annota la prova più debole e dedicale la settimana successiva."],
+      quiz:[["Soglia per ottenere il DELF B2:",["50/100","60/100","75/100"]]],
+      acts:[{t:"dialogo",lvl:"B2",l:"1. Ascolto"},{t:"lettura",id:"r2",l:"2. Lettura"},{t:"scrivi",wid:"w3",l:"3. Scrittura"},{t:"orale",o:{id:"pod1",lvl:"B2",prep:1800,text:"Document : « De plus en plus d'entreprises proposent la semaine de quatre jours. » Dégagez le problème soulevé par ce document, puis présentez votre opinion de façon argumentée."},l:"4. Orale"},{t:"link",href:"https://www.france-education-international.fr/diplome/delf-tout-public/niveau-b2/exemples-sujets",l:"Sujets officiels DELF B2 (da stampare)"}]}
+ },
+ tcf:{
+  co:{spiega:"35 minuti, 39 domande a scelta multipla con 4 opzioni. Ogni registrazione si ascolta una sola volta e la domanda arriva dopo l'ascolto. La difficoltà cresce: dalle frasi di vita quotidiana a interviste ed esposizioni su temi astratti a velocità normale.",
+      tips:["Non perdere tempo a prendere appunti: concentrati sull'ascolto.","Le prime domande sono facili: non sprecare punti per distrazione.","Allenati all'ascolto unico, senza ripetere l'audio."],
+      quiz:[["Quante domande ha la comprensione orale del TCF Canada?",["39","29","50"]],["Quante volte si ascolta ogni registrazione?",["Una sola volta","Due volte","Tre volte"]]],
+      acts:[{t:"dialogo",lvl:"B2",l:"Ascolto B2, un solo ascolto"},{t:"link",href:"https://francaisfacile.rfi.fr/fr/",l:"RFI – Le français facile (allenamento TCF)"},{t:"link",href:"https://apprendre.tv5monde.com/fr",l:"TV5Monde – Apprendre le français"}]},
+  ce:{spiega:"60 minuti, 39 domande a scelta multipla con 4 opzioni, difficoltà crescente: annunci e messaggi, poi lettere e articoli, fino a testi lunghi e astratti. Circa un minuto e mezzo per domanda.",
+      tips:["Non bloccarti su una domanda: segna e vai avanti.","Le ultime domande valgono per i livelli alti: tieni tempo per leggerle bene.","Allenati con il cronometro."],
+      quiz:[["Quanto dura la comprensione scritta del TCF Canada?",["60 minuti","35 minuti","2 ore"]],["Quante opzioni di risposta ha ogni domanda?",["4","3","5"]]],
+      acts:[{t:"lettura",id:"r2",l:"Lettura B2"},{t:"lettura",id:"r1",l:"Lettura B1"}]},
+  ee:{spiega:"60 minuti, 3 compiti. Compito 1: messaggio per descrivere, raccontare o spiegare (60-120 parole). Compito 2: articolo, lettera o nota con resoconto di un'esperienza e commenti (120-150 parole). Compito 3: testo che confronta due punti di vista su un fatto sociale e dà la tua opinione (120-180 parole). Se un compito non rispetta il numero di parole, è fuori tema o manca, la prova può essere valutata «A1 non raggiunto».",
+      tips:["Dividi il tempo: circa 10, 20 e 30 minuti.","Rispetta minimo e massimo di parole in ogni compito.","Nel compito 3 riassumi i due punti di vista prima di dare il tuo."],
+      quiz:[["Parole richieste nel compito 1 del TCF Canada:",["60-120","120-150","250"]],["Cosa chiede il compito 3?",["Confrontare due punti di vista e dare il proprio","Raccontare un ricordo","Scrivere una poesia"]]],
+      acts:[{t:"scrivi",wid:"w5",l:"Compito 1 (60-120 parole)"},{t:"scrivi",w:{id:"pt2",lvl:"B1",exam:"tcf",words:150,focus:"compito 2",text:"Vous avez participé à une journée portes ouvertes dans une école de langues. Écrivez un article pour le blog de votre quartier : racontez votre expérience et donnez votre avis. (120 à 150 mots)",it:"TCF compito 2: resoconto con opinione."},l:"Compito 2 (120-150 parole)"},{t:"scrivi",w:{id:"pt3",lvl:"B2",exam:"tcf",words:180,focus:"compito 3",text:"Document 1 : « Interdire les voitures en centre-ville améliore la qualité de vie des habitants. » Document 2 : « Fermer le centre aux voitures pénalise les commerçants et les personnes âgées. » Comparez ces deux points de vue, puis donnez votre avis. (120 à 180 mots)",it:"TCF compito 3: confronto di due punti di vista."},l:"Compito 3 (120-180 parole)"}]},
+  eo:{spiega:"12 minuti faccia a faccia con un esaminatore, 3 compiti. Compito 1: colloquio guidato senza preparazione (2 minuti) su di te, la famiglia, il lavoro. Compito 2: interazione con 2 minuti di preparazione (5 minuti e 30 in tutto): devi ottenere informazioni in una situazione quotidiana. Compito 3: punto di vista senza preparazione (4 minuti e 30): rispondi in modo spontaneo, continuo e convincente a una domanda.",
+      tips:["Prepara una presentazione di te da 2 minuti e ripetila.","Nel compito 2 fai molte domande diverse: prezzi, orari, condizioni, alternative.","Nel compito 3 usa uno schema fisso: opinione, due argomenti con esempi, concessione, conclusione."],
+      quiz:[["Quanto dura in tutto l'espressione orale del TCF Canada?",["12 minuti","20 minuti","30 minuti"]],["Cosa devi fare nel compito 2?",["Ottenere informazioni in una situazione quotidiana","Leggere un testo","Riassumere un documento audio"]]],
+      acts:[{t:"orale",o:{id:"pot1",lvl:"B1",prep:0,text:"Compito 1 – Parlez-moi de vous : votre famille, votre travail, vos loisirs, vos projets."},l:"Compito 1: colloquio (2 min)"},{t:"parla",scene:"Tu es le responsable d'un club de sport à Montréal. Le candidat veut s'inscrire et doit te poser des questions (horaires, prix, activités, conditions). Réponds de façon réaliste et attends ses questions.",l:"Compito 2: interazione per ottenere informazioni"},{t:"orale",o:{id:"pot3",lvl:"B2",prep:0,text:"Compito 3 – Pensez-vous qu'il faut faire des études longues pour réussir sa vie professionnelle ?"},l:"Compito 3: punto di vista (4 min 30)"}]},
+  blanc:{spiega:"Simulazione completa del TCF Canada: ascolto (35 min), lettura (60 min), scrittura (60 min, 3 compiti), orale (12 min). In tutto circa 2 ore e 47. Puoi ripetere il TCF Canada, ma devono passare almeno 20 giorni tra un tentativo e l'altro, e l'attestato vale 2 anni.",
+      tips:["Ripeti la simulazione ogni 2-3 settimane nell'ultima fase.","Annota la prova più debole e dedicale la settimana successiva."],
+      quiz:[["Quanti giorni devono passare tra due tentativi del TCF Canada?",["20","7","90"]],["Validità dell'attestato TCF Canada:",["2 anni","Illimitata","6 mesi"]]],
+      acts:[{t:"dialogo",lvl:"B2",l:"1. Ascolto"},{t:"lettura",id:"r2",l:"2. Lettura"},{t:"scrivi",w:{id:"pt3",lvl:"B2",exam:"tcf",words:180,focus:"compito 3",text:"Document 1 : « Interdire les voitures en centre-ville améliore la qualité de vie des habitants. » Document 2 : « Fermer le centre aux voitures pénalise les commerçants et les personnes âgées. » Comparez ces deux points de vue, puis donnez votre avis. (120 à 180 mots)",it:"TCF compito 3."},l:"3. Scrittura"},{t:"orale",o:{id:"pot3",lvl:"B2",prep:0,text:"Compito 3 – Pensez-vous qu'il faut faire des études longues pour réussir sa vie professionnelle ?"},l:"4. Orale"},{t:"link",href:"https://www.france-education-international.fr/test/tcf-canada",l:"TCF Canada – pagina ufficiale ed esempi"}]}
+ }
+};
+
 
 /* ============================ STATO ============================ */
-const KEY="c4m-fr-v1"; const APP_VERSION="1.3 · 17/11/2026";
+const KEY="c4m-fr-v1"; const APP_VERSION="1.4 · 17/11/2026";
 function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function defState(){return {v:1,profile:{done:false,exam:"delf",date:"",daily:45,contexts:["amici","viaggio","lavoro","cantiere"],variant:"fr",start:"A1"},
- srs:{},custom:[],log:{},skills:{co:[],ce:[],ee:[],eo:[]},doneToday:{},dialogs:{},gen:[],pron:{},verbs:{n:0,ok:0},sims:[]};}
+ srs:{},path:{},custom:[],log:{},skills:{co:[],ce:[],ee:[],eo:[]},doneToday:{},dialogs:{},gen:[],pron:{},verbs:{n:0,ok:0},sims:[]};}
 let S=defState();
 function merge(o){const d=defState();if(!o||typeof o!=="object")return d;const r=Object.assign(d,o);r.profile=Object.assign(defState().profile,o.profile||{});r.skills=Object.assign(defState().skills,o.skills||{});return r;}
 let dbRef=null, saving=false, dirty=false, saveTimer=null, dbNote="";
@@ -416,7 +640,7 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 function hashStr(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h);}
 function lvlIdx(l){return Math.max(0,LEVELS.indexOf(l));}
 function logDay(){const t=today();if(!S.log[t])S.log[t]={min:0,ext:0};return S.log[t];}
-function markDone(k){const t=today();if(!S.doneToday[t])S.doneToday={[t]:{}};S.doneToday[t][k]=true;save();}
+function markDone(k){const t=today();if(!S.doneToday[t])S.doneToday={[t]:{}};S.doneToday[t][k]=true;if(pathCtx){const pc=pathCtx;pathCtx=null;pState(pc.u).acts[pc.a]=true;checkUnitDone(unitById(pc.u));}save();}
 function isDone(k){const t=today();return !!(S.doneToday[t]&&S.doneToday[t][k]);}
 function pushSkill(sk,score,lvl){S.skills[sk].push({s:Math.round(score*100)/100,l:lvl,d:today()});if(S.skills[sk].length>40)S.skills[sk].shift();save();}
 function skillLevel(sk){
@@ -504,6 +728,7 @@ async function transcribe(blob){
 }
 function recUI(id,label){return REC_OK?`<button class="btn soft small" id="${id}">${ICON.mic} ${label||"Registra"}</button>`:"";}
 const ICON={
+ path:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>',
  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" width="18" height="18"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
  stop:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="16" height="16"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
  play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
@@ -554,9 +779,9 @@ setInterval(()=>{
 /* ============================ ROUTER ============================ */
 let route={v:"oggi"};
 function go(v,p){route=Object.assign({v},p||{});stopSpeak();render();window.scrollTo(0,0);}
-const NAV=[["oggi","Oggi","today"],["ascolta","Ascolta","ear"],["parole","Parole","cards"],["esame","Esame","exam"],["io","Progressi","me"]];
+const NAV=[["oggi","Oggi","today"],["percorso","Percorso","path"],["ascolta","Ascolta","ear"],["parole","Parole","cards"],["esame","Esame","exam"],["io","Progressi","me"]];
 function renderNav(){
-  const top={oggi:"oggi",ascolta:"ascolta",dialogo:"ascolta",pronuncia:"ascolta",suono:"ascolta",verbi:"oggi",parole:"parole",ripasso:"parole",parla:"oggi",scrivi:"esame",esame:"esame",lettura:"esame",orale:"esame",io:"io",impostazioni:"io"}[route.v]||"oggi";
+  const top={percorso:"percorso",unita:"percorso",oggi:"oggi",ascolta:"ascolta",dialogo:"ascolta",pronuncia:"ascolta",suono:"ascolta",verbi:"oggi",parole:"parole",ripasso:"parole",parla:"oggi",scrivi:"esame",esame:"esame",lettura:"esame",orale:"esame",io:"io",impostazioni:"io"}[route.v]||"oggi";
   $("#nav").innerHTML=NAV.map(([k,l,i])=>`<button data-go="${k}" class="${top===k?"on":""}" aria-current="${top===k?"page":"false"}">${ICON[i]}<span>${l}</span></button>`).join("");
 }
 function renderCountdown(){
@@ -570,7 +795,7 @@ function render(){
   renderNav(); renderCountdown();
   const V=$("#view");
   if(!S.profile.done&&route.v!=="test"){V.innerHTML=viewOnboarding();bindOnboarding();return;}
-  const fn={oggi:viewOggi,ascolta:viewAscolta,dialogo:viewDialogo,pronuncia:viewPronuncia,suono:viewSuono,verbi:viewVerbi,parole:viewParole,ripasso:viewRipasso,parla:viewParla,scrivi:viewScrivi,esame:viewEsame,lettura:viewLettura,orale:viewOrale,io:viewIo,impostazioni:viewImpostazioni,test:viewTest}[route.v]||viewOggi;
+  const fn={percorso:viewPercorso,unita:viewUnita,oggi:viewOggi,ascolta:viewAscolta,dialogo:viewDialogo,pronuncia:viewPronuncia,suono:viewSuono,verbi:viewVerbi,parole:viewParole,ripasso:viewRipasso,parla:viewParla,scrivi:viewScrivi,esame:viewEsame,lettura:viewLettura,orale:viewOrale,io:viewIo,impostazioni:viewImpostazioni,test:viewTest}[route.v]||viewOggi;
   V.innerHTML=fn(); if(binders[route.v])binders[route.v]();
 }
 const binders={};
@@ -653,7 +878,8 @@ function viewOggi(){
    {k:"esame",t:"Compito d'esame",d:(S.profile.exam==="delf"?"Formato DELF B2":"Formato TCF/TEF Canada")+": lettura o ascolto a tempo",go:"esame",min:5}
   ].filter(Boolean);
   const done=tasks.filter(t=>isDone(t.k)).length;
-  return `<div class="stack"><h1>Session du jour</h1>
+  const nxu=nextUnit();
+  return `${nxu?`<div class="card accent"><div class="row between"><h3>Percorso</h3><span class="chip red">Unità ${UNITS.indexOf(nxu)+1} di ${UNITS.length}</span></div><p><b>${esc(nxu.title)}</b> · <span class="muted">${esc(nxu.can)}</span></p><button class="btn small" data-go="unita" data-p='${JSON.stringify({id:nxu.id})}'>Continua il percorso</button></div>`:""}<div class="stack"><h1>Session du jour</h1>
    <p class="muted">Livello stimato <b>${lvl}</b> · ${done} di ${tasks.length} attività fatte · obiettivo ${S.profile.daily} minuti</p></div>
    ${dbNote?`<p class="note">${esc(dbNote)}</p>`:""}
    ${reactivate?`<p class="note">Fase di riattivazione: prima i suoni e i verbi di base, poi i contesti. Dura finché non arrivi a circa 25 ore.</p>`:""}
@@ -826,7 +1052,7 @@ function alertMsg(near,txt){const p=document.createElement("p");p.className="not
 let vb=null;
 function newVerbQ(){
   const names=Object.keys(VERBS); const v=names[Math.floor(Math.random()*names.length)];
-  const ts=lvlIdx(skillLevel("ee"))<1?["pres","pc"]:["pres","pc","imp","fut"]; const t=ts[Math.floor(Math.random()*ts.length)];
+  const ts=route.ten&&route.ten.length?route.ten:(lvlIdx(skillLevel("ee"))<1?["pres","pc"]:["pres","pc","imp","fut"]); const t=ts[Math.floor(Math.random()*ts.length)];
   const p=Math.floor(Math.random()*6); return {v,t,p,ans:conj(v,t,p)};
 }
 function conj(v,t,p){
@@ -892,7 +1118,7 @@ binders.ripasso=()=>{
 let ch={ctx:null,msgs:[],busy:false,fb:null};
 function chatInstr(){
   const lvl=skillLevel("eo");
-  return `Tu es un partenaire de conversation pour un adulte italien qui apprend le français (niveau ${lvl} du CECR, objectif B2). Situation de jeu de rôle : ${SCENES[ch.ctx]} Tu joues l'autre personne de la scène.
+  return `Tu es un partenaire de conversation pour un adulte italien qui apprend le français (niveau ${lvl} du CECR, objectif B2). Situation de jeu de rôle : ${ch.scene||SCENES[ch.ctx]} Tu joues l'autre personne de la scène.
 Règles : réponds uniquement en français ${S.profile.variant==="qc"?"du Québec, avec quelques expressions québécoises courantes":"de France"}, en 1 à 3 phrases courtes adaptées au niveau ${lvl}. Pose une question à chaque tour pour faire avancer la scène. Si l'apprenant écrit un mot en italien, donne le mot français entre parenthèses et continue. Ne corrige pas les fautes pendant la conversation, sauf si la phrase est incompréhensible. Après 6 à 8 échanges, introduis un petit imprévu.`;
 }
 function viewParla(){
@@ -900,12 +1126,12 @@ function viewParla(){
    ${S.profile.contexts.map(c=>`<button class="opt" data-ctx="${c}"><b>${esc(CONTEXTS[c])}</b><br><span class="small muted">${esc(SCENES[c])}</span></button>`).join("")}`;
   if(!aiOn()){
     const prompt=chatInstr()+"\nCommence la conversation.";
-    return `<div class="stack"><button class="btn ghost small" id="ch-back" style="align-self:flex-start">‹ Contesti</button><h1>${esc(CONTEXTS[ch.ctx])}</h1></div>
+    return `<div class="stack"><button class="btn ghost small" id="ch-back" style="align-self:flex-start">‹ Contesti</button><h1>${esc(ch.scene?"Scena d'esame":CONTEXTS[ch.ctx])}</h1></div>
      <div class="card"><p>Per conversare dentro l'app inserisci una chiave Groq gratuita in Progressi › Impostazioni. In alternativa copia le istruzioni e incollale in una chat con Claude, poi usa la modalità vocale.</p>
      <button class="btn" id="ch-copy">Copia per Claude</button><button class="btn soft" id="ch-done">Fatto: segna la missione</button></div>`;
   }
-  return `<div class="row between"><button class="btn ghost small" id="ch-back">‹ Contesti</button><span class="chip">${esc(CONTEXTS[ch.ctx])}</span></div>
-   <div class="card"><p class="small muted">${esc(SCENES[ch.ctx])}</p>
+  return `<div class="row between"><button class="btn ghost small" id="ch-back">‹ Contesti</button><span class="chip">${esc(ch.scene?"Scena d'esame":CONTEXTS[ch.ctx])}</span></div>
+   <div class="card"><p class="small muted">${esc(ch.scene||SCENES[ch.ctx])}</p>
     <div class="chat">${ch.msgs.map(m=>`<div class="bubble ${m.role==="user"?"me":"ai"}">${esc(m.content)}${m.role==="assistant"?` <button class="play" data-say="${esc(m.content)}" data-who="1" aria-label="Ascolta" style="width:30px;height:30px;vertical-align:middle">${ICON.play}</button>`:""}</div>`).join("")}${ch.busy?`<div class="bubble ai muted">...</div>`:""}</div>
     ${ch.fb?"":`<textarea id="ch-in" placeholder="Rispondi in francese (microfono della tastiera)" style="min-height:80px"></textarea>
     <div class="row">${REC_OK?`<button class="btn soft" id="ch-rec">${ICON.mic} Registra</button>`:dictOn()?`<button class="btn soft" id="ch-dict">Detta</button>`:""}<button class="btn" id="ch-send" style="flex:1" ${ch.busy?"disabled":""}>Invia</button></div>
@@ -1000,10 +1226,10 @@ punteggio su 25 secondo la griglia ${S.profile.exam==="delf"?"DELF B2 della prod
 
 /* ============================ ESAME ============================ */
 const FORMATS={
- delf:{name:"DELF B2",rows:[["Comprensione orale","circa 30 min","2-3 documenti audio, domande"],["Comprensione scritta","1 h","2 testi, domande"],["Produzione scritta","1 h","testo argomentativo, almeno 250 parole"],["Produzione orale","30 min di preparazione + 20 min","difesa di un punto di vista su un documento"]],
-  note:"Ogni prova vale 25 punti: servono almeno 5/25 in ciascuna e 50/100 in totale."},
- tcf:{name:"TCF Canada",rows:[["Comprensione orale","35 min","39 domande a scelta multipla"],["Comprensione scritta","60 min","39 domande a scelta multipla"],["Espressione scritta","60 min","3 compiti: 60-120, 120-150, 120-180 parole"],["Espressione orale","12 min","3 compiti: colloquio, interazione, punto di vista"]],
-  note:"I risultati si convertono in livelli NCLC; per il PSTQ del Québec serve almeno il livello 7 all'orale e 5 allo scritto (verifica sui siti ufficiali)."}
+ delf:{name:"DELF B2",rows:[["Comprensione orale","circa 30 min","documenti radio autentici, uno lungo e altri brevi; domande"],["Comprensione scritta","1 h","testo informativo e testo argomentativo; domande"],["Produzione scritta","1 h","presa di posizione argomentata (forum o lettera formale), almeno 250 parole"],["Produzione orale","30 min di preparazione + 20 min","monologo a partire da un documento, poi interazione con l'esaminatore"]],
+  note:"Ogni prova vale 25 punti: servono almeno 50/100 in totale e almeno 5/25 in ciascuna prova. Il diploma non scade."},
+ tcf:{name:"TCF Canada",rows:[["Comprensione orale","35 min","39 domande a scelta multipla, un solo ascolto"],["Comprensione scritta","60 min","39 domande a scelta multipla"],["Espressione scritta","60 min","3 compiti: 60-120, 120-150, 120-180 parole"],["Espressione orale","12 min","colloquio (2 min), interazione (5 min 30, di cui 2 di preparazione), punto di vista (4 min 30)"]],
+  note:"Durata totale 2 h 47. L'attestato vale 2 anni; tra due tentativi devono passare almeno 20 giorni. Per il PSTQ del Québec serve almeno il livello 7 all'orale e 5 allo scritto (verifica sui siti ufficiali)."}
 };
 function viewEsame(){
   const F=FORMATS[S.profile.exam];
@@ -1082,6 +1308,146 @@ Massimo 3 voci per lista, 5 errori. Valuta come prova orale, non come scritto.`,
   };
 };
 
+/* ============================ PERCORSO: LOGICA E VISTE ============================ */
+let pathCtx=null;
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function fmtDate(d){return d.toLocaleDateString("it-IT",{day:"numeric",month:"long",year:"numeric"});}
+function unitById(id){return UNITS.find(u=>u.id===id);}
+function unitData(u){
+  if(!u.ex_unit)return u;
+  const e=EXAM_UNITS[S.profile.exam==="tcf"?"tcf":"delf"][u.ex_unit];
+  return Object.assign({},u,{spiega:e.spiega,tips:e.tips,quiz:e.quiz,acts:e.acts,gram:"Formato "+(S.profile.exam==="tcf"?"TCF Canada":"DELF B2"),ex:[],trap:""});
+}
+function pState(id){if(!S.path)S.path={};if(!S.path[id])S.path[id]={acts:{},quiz:null,done:null};return S.path[id];}
+function unitDone(u){const p=S.path&&S.path[u.id];return !!(p&&p.done);}
+function optionalUnit(u){return u.lvl!=="EX"&&lvlIdx(u.lvl)<lvlIdx(S.profile.start);}
+function nextUnit(){return UNITS.find(u=>!unitDone(u)&&!optionalUnit(u))||null;}
+function realActs(d){return d.acts.map((a,i)=>[a,i]).filter(([a])=>a.t!=="link");}
+function actsDone(u){const d=unitData(u),p=pState(u.id);return realActs(d).filter(([a,i])=>p.acts[i]).length;}
+function actsNeeded(u){return Math.max(1,Math.ceil(realActs(unitData(u)).length*0.6));}
+function checkUnitDone(u){
+  const p=pState(u.id);
+  if(!p.done&&p.quiz!=null&&p.quiz>=0.8&&actsDone(u)>=actsNeeded(u)){p.done=today();save();return true;}
+  return false;
+}
+function weeklyHours(){
+  let m=0;for(let i=0;i<14;i++){const d=new Date();d.setDate(d.getDate()-i);const l=S.log[ymd(d)];if(l)m+=(l.min||0)+(l.ext||0);}
+  const h=m/60; return h>=1?h/2:S.profile.daily*7/60;
+}
+function remainingHours(){return UNITS.filter(u=>!unitDone(u)&&!optionalUnit(u)).reduce((a,u)=>a+UNIT_HOURS[u.lvl],0);}
+function pace(){
+  const rem=remainingHours(), wk=Math.max(0.5,weeklyHours());
+  const end=new Date(); end.setDate(end.getDate()+Math.ceil(rem/wk*7));
+  const r={rem,wk,end};
+  if(S.profile.date){
+    const ex=new Date(S.profile.date); const days=Math.ceil((ex-new Date())/86400000)-14;
+    r.exam=ex; r.late=end>new Date(ex.getTime()-14*86400000);
+    r.needMin=days>0?Math.ceil(rem*60/days):null;
+  }
+  return r;
+}
+function unitSchedule(){
+  // data prevista di fine per ogni unità, al ritmo attuale
+  const wk=Math.max(0.5,weeklyHours()); let acc=0; const out={};
+  UNITS.forEach(u=>{if(unitDone(u)||optionalUnit(u))return;acc+=UNIT_HOURS[u.lvl];const d=new Date();d.setDate(d.getDate()+Math.ceil(acc/wk*7));out[u.id]=d;});
+  return out;
+}
+function launchAct(u,i){
+  const a=unitData(u).acts[i]; pathCtx={u:u.id,a:i};
+  if(a.t==="verbi"){vb={fresh:true};go("verbi",{ten:a.ten});return;}
+  if(a.t==="suono"){go("suono",{id:a.id});return;}
+  if(a.t==="lettura"){rd={};go("lettura",{id:a.id});return;}
+  if(a.t==="parole"){rv=null;go("ripasso");return;}
+  if(a.t==="dialogo"){
+    const pool=DIALOGS.concat(S.gen).filter(d=>d.lvl===a.lvl);
+    const pref=pool.filter(d=>S.profile.contexts.includes(d.ctx));
+    const list=(pref.length?pref:pool); const fresh=list.filter(d=>!S.dialogs[d.id]);
+    const d=(fresh.length?fresh:list)[0]||DIALOGS[0]; dl={}; go("dialogo",{id:d.id});return;
+  }
+  if(a.t==="scrivi"){
+    if(a.w&&!WRITING.find(x=>x.id===a.w.id))WRITING.push(Object.assign({exam:"all"},a.w));
+    wr={id:a.w?a.w.id:a.wid,text:"",t0:Date.now(),fb:null}; go("scrivi");return;
+  }
+  if(a.t==="orale"){
+    if(!ORAL.find(x=>x.id===a.o.id))ORAL.push(a.o);
+    orl={id:a.o.id,phase:"prep",t0:Date.now()}; go("orale");return;
+  }
+  if(a.t==="parla"){
+    ch={ctx:a.ctx||S.profile.contexts[0]||"amici",scene:a.scene||null,msgs:[],busy:false,fb:null};
+    go("parla"); if(aiOn())aiTurn(); return;
+  }
+}
+const ICON_PATH='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg>';
+
+function viewPercorso(){
+  const P=pace(), main=UNITS.filter(u=>!optionalUnit(u)), done=main.filter(unitDone).length, nx=nextUnit(), sch=unitSchedule();
+  const exName=S.profile.exam==="tcf"?"TCF Canada":"DELF B2";
+  let paceTxt=`Al ritmo attuale (${P.wk.toFixed(1)} ore a settimana) finisci il percorso il <b>${fmtDate(P.end)}</b>.`;
+  if(P.exam){paceTxt+=P.late?` <span class="chip red">In ritardo sull'esame</span><br>Per arrivare pronto due settimane prima del ${fmtDate(P.exam)} servono circa <b>${P.needMin||"—"} minuti al giorno</b>, corso e ascolto libero compresi.`
+    :` <span class="chip good">In linea con l'esame</span> del ${fmtDate(P.exam)}.`;}
+  else paceTxt+=` Imposta la data dell'esame in Progressi › Impostazioni per sapere se sei in linea.`;
+  return `<div class="stack"><h1>Percorso verso il B2</h1><p class="muted">${PHASES.length} fasi e ${UNITS.length} unità, dal ripasso delle basi alle simulazioni del ${exName}. Ogni unità si chiude con una verifica.</p></div>
+   <div class="card accent"><div class="row between"><div><div class="big">${done}<span class="muted" style="font-size:20px"> / ${main.length}</span></div><span class="small muted">unità completate</span></div><div style="text-align:right"><div class="big">${Math.round(P.rem)}</div><span class="small muted">ore stimate rimaste</span></div></div>
+    <div class="bar"><i style="width:${Math.round(done/main.length*100)}%"></i></div><p class="small">${paceTxt}</p>
+    ${nx?`<button class="btn wide" data-unit="${nx.id}">Continua: ${esc(nx.title)}</button>`:`<p><b>Percorso completato.</b> Ripeti le simulazioni finché non superi stabilmente la soglia.</p>`}</div>
+   ${PHASES.map(ph=>{const us=UNITS.filter(u=>u.ph===ph.id);const pd=us.filter(unitDone).length;
+     return `<div class="stack"><div class="row between"><h2>${esc(ph.title)}</h2><span class="chip">${ph.lvl==="EX"?exName:ph.lvl} · ${pd}/${us.length}</span></div><p class="small muted">${esc(ph.goal)}</p>
+     ${us.map(u=>{const n=UNITS.indexOf(u)+1;const st=unitDone(u)?["good","Fatta"]:optionalUnit(u)?["","Facoltativa"]:u===nx?["red","Adesso"]:["","Da fare"];
+       return `<button class="opt" data-unit="${u.id}"><div class="row between"><b>${n}. ${esc(u.title)}</b><span class="chip ${st[0]}">${st[1]}</span></div><span class="small muted">${esc(u.can)}${sch[u.id]&&!unitDone(u)?` · entro il ${sch[u.id].toLocaleDateString("it-IT",{day:"numeric",month:"short"})}`:""}</span></button>`;}).join("")}</div>`;}).join("")}
+   <p class="small muted">Programma costruito sui descrittori del Quadro comune europeo e sulle griglie di valutazione del DELF B2 pubblicate da France Éducation international. Le ore per unità sono stime: il calendario si aggiorna con il tuo ritmo reale.</p>`;
+}
+binders.percorso=()=>{document.querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>{qz=null;go("unita",{id:b.dataset.unit});});};
+
+let qz=null, aiq=null;
+function viewUnita(){
+  const u=unitById(route.id)||UNITS[0], d=unitData(u), p=pState(u.id), n=UNITS.indexOf(u)+1;
+  if(!qz||qz.u!==u.id){qz={u:u.id,items:d.quiz.map(q=>{const o=shuffle(q[1]);return {q:q[0],o,ok:o.indexOf(q[1][0])};}),ans:{}};aiq=null;}
+  const answered=Object.keys(qz.ans).length, right=qz.items.filter((q,i)=>qz.ans[i]===q.ok).length;
+  const need=actsNeeded(u), have=actsDone(u);
+  return `<div class="stack"><button class="btn ghost small" data-go="percorso" style="align-self:flex-start">‹ Percorso</button>
+   <div class="row between"><span class="chip">Unità ${n} di ${UNITS.length}</span><span class="chip red">${u.lvl==="EX"?(S.profile.exam==="tcf"?"TCF Canada":"DELF B2"):u.lvl}</span></div>
+   <h1>${esc(u.title)}</h1><p><b>Obiettivo:</b> ${esc(u.can)}</p>
+   ${p.done?`<p class="chip good" style="align-self:flex-start">Completata il ${esc(p.done)}</p>`:""}</div>
+   <div class="card"><h3>${u.ex_unit?"Come funziona la prova":"Grammatica: "+esc(d.gram)}</h3><p>${esc(d.spiega)}</p>
+    ${(d.ex||[]).map(e=>`<div class="line"><button class="play" data-say="${esc(e[0])}" data-rate="0.85" aria-label="Ascolta">${ICON.play}</button><div><div class="fr">${esc(e[0])}</div><div class="it">${esc(e[1])}</div></div></div>`).join("")}
+    ${d.trap?`<p class="note"><b>Attenzione:</b> ${esc(d.trap)}</p>`:""}
+    ${d.tips?`<h3>Strategie</h3><ul>${d.tips.map(t=>`<li>${esc(t)}</li>`).join("")}</ul>`:""}</div>
+   <div class="card"><div class="row between"><h3>Attività</h3><span class="chip ${have>=need?"good":""}">${have} fatte · servono ${need}</span></div>
+    ${d.acts.map((a,i)=>a.t==="link"?`<a class="opt" href="${esc(a.href)}" target="_blank" rel="noopener">${esc(a.l)} ↗</a>`
+      :`<button class="opt ${p.acts[i]?"right":""}" data-act="${i}"><div class="row between"><span>${esc(a.l)}</span><span class="chip ${p.acts[i]?"good":""}">${p.acts[i]?"Fatta":"Inizia"}</span></div></button>`).join("")}</div>
+   <div class="card"><div class="row between"><h3>Verifica dell'unità</h3>${p.quiz!=null?`<span class="chip ${p.quiz>=0.8?"good":"warn"}">Migliore: ${Math.round(p.quiz*100)}%</span>`:""}</div>
+    <p class="small muted">Serve almeno l'80% per chiudere l'unità.</p>
+    ${qz.items.map((q,qi)=>`<div class="stack"><p><b>${qi+1}.</b> <span class="fr">${esc(q.q)}</span></p>${q.o.map((o,oi)=>{const a=qz.ans[qi];const cls=a==null?"":oi===q.ok?"right":oi===a?"wrong":"";return `<button class="opt ${cls}" data-qz="${qi}:${oi}" ${a!=null?"disabled":""}>${esc(o)}</button>`;}).join("")}</div>`).join("")}
+    ${answered===qz.items.length?`<p class="big">${right}/${qz.items.length}</p><div class="row"><button class="btn soft small" id="qz-again">Rifai la verifica</button></div>`:""}
+    ${aiOn()&&!u.ex_unit?`<button class="btn soft" id="ai-more">Altri esercizi con l'AI</button><div id="ai-q">${aiq?aiqHtml():""}</div>`:""}</div>
+   <div id="u-msg">${unitDone(u)?"":p.quiz!=null&&p.quiz>=0.8&&have<need?`<p class="note">Verifica superata: completa ancora ${need-have} attività per chiudere l'unità.</p>`:""}</div>`;
+}
+function aiqHtml(){return aiq.map((q,qi)=>`<div class="stack"><p class="fr"><b>${qi+1}.</b> ${esc(q.f)}</p>${q.o.map((o,oi)=>{const cls=q.a==null?"":oi===q.ok?"right":oi===q.a?"wrong":"";return `<button class="opt ${cls}" data-aq="${qi}:${oi}" ${q.a!=null?"disabled":""}>${esc(o)}</button>`;}).join("")}${q.a!=null?`<p class="small muted">${esc(q.s)}</p>`:""}</div>`).join("");}
+binders.unita=()=>{
+  const u=unitById(route.id)||UNITS[0], p=pState(u.id);
+  document.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>launchAct(u,+b.dataset.act));
+  document.querySelectorAll("[data-qz]").forEach(b=>b.onclick=()=>{
+    const [qi,oi]=b.dataset.qz.split(":").map(Number); qz.ans[qi]=oi;
+    if(Object.keys(qz.ans).length===qz.items.length){
+      const sc=qz.items.filter((q,i)=>qz.ans[i]===q.ok).length/qz.items.length;
+      p.quiz=Math.max(p.quiz||0,sc); p.qn=(p.qn||0)+1; if(u.lvl!=="EX")pushSkill("ce",sc*0.9,u.lvl); save();
+      if(checkUnitDone(u)){render();$("#u-msg").innerHTML=`<div class="card accent"><h2>Unità completata</h2><p>Ottimo lavoro. ${nextUnit()?`Prossima: ${esc(nextUnit().title)}.`:"Hai completato il percorso."}</p>${nextUnit()?`<button class="btn wide" id="u-next">Vai alla prossima unità</button>`:""}</div>`;const nb=$("#u-next");if(nb)nb.onclick=()=>{qz=null;go("unita",{id:nextUnit().id});};return;}
+    }
+    render();
+  });
+  const ag=$("#qz-again"); if(ag)ag.onclick=()=>{qz=null;render();};
+  const am=$("#ai-more"); if(am)am.onclick=async()=>{
+    am.disabled=true; $("#ai-q").innerHTML=`<p class="muted">Preparo gli esercizi...</p>`;
+    try{
+      const r=await aiJSON(`Sei un insegnante di francese per adulti italiani. Crea 6 esercizi a scelta multipla sul tema grammaticale «${u.gram}» (livello ${u.lvl}). Ogni esercizio è una frase francese naturale con uno spazio ___ e 3 opzioni, di cui la prima è quella corretta; le altre devono essere errori tipici di un italiano. Aggiungi una spiegazione di una riga in italiano.
+Rispondi solo con JSON: {"esercizi":[{"frase":"...","opzioni":["corretta","errata","errata"],"spiegazione":"..."}]}`);
+      aiq=(r.esercizi||[]).slice(0,8).map(e=>{const o=shuffle(e.opzioni);return {f:e.frase,o,ok:o.indexOf(e.opzioni[0]),s:e.spiegazione,a:null};});
+      render();
+    }catch(e){$("#ai-q").innerHTML=`<p class="note">${esc(aiErr(e))}</p>`;am.disabled=false;}
+  };
+  document.querySelectorAll("[data-aq]").forEach(b=>b.onclick=()=>{const [qi,oi]=b.dataset.aq.split(":").map(Number);aiq[qi].a=oi;$("#ai-q").innerHTML=aiqHtml();binders.unita();});
+};
+
 /* ============================ PROGRESSI ============================ */
 function viewIo(){
   const h=totalHours(), need=NEED_HOURS[S.profile.start]||450;
@@ -1100,7 +1466,7 @@ function viewIo(){
    <div class="card"><h3>Ultimi 14 giorni</h3>${svg}<p class="small muted">Blu pieno: app · blu chiaro: fuori dall'app · tratteggio: obiettivo giornaliero.</p></div>
    <div class="card"><h3>Abilità d'esame</h3><table class="t"><tr><th>Abilità</th><th>Livello</th><th>Media recente</th></tr>
     ${[["co","Comprensione orale"],["ce","Comprensione scritta"],["ee","Produzione scritta"],["eo","Produzione orale"]].map(([k,l])=>{const a=skillAvg(k);return `<tr><td>${l}</td><td><b>${skillLevel(k)}</b></td><td class="score">${a==null?"—":Math.round(a*100)+"%"}</td></tr>`;}).join("")}</table>
-    <p class="small muted">Parole consolidate: ${knownCount()} · verbi giusti: ${S.verbs.ok}/${S.verbs.n}</p></div>
+    <p class="small muted">Unità del percorso completate: ${UNITS.filter(unitDone).length}/${UNITS.length} · parole consolidate: ${knownCount()} · verbi giusti: ${S.verbs.ok}/${S.verbs.n}</p></div>
    <div class="card"><h3>Riepilogo per Claude</h3><p class="small muted">Incollalo in una chat con Claude per il piano del mese.</p><button class="btn soft" id="io-copy">Copia per Claude</button></div>
    <button class="btn ghost wide" data-go="impostazioni">Impostazioni</button>`;
 }
@@ -1158,6 +1524,7 @@ binders.impostazioni=()=>{
   $("#s-reset").onclick=()=>{$("#s-conf").innerHTML=`<p class="small">Confermi? L'operazione non si annulla.</p><button class="btn red small" id="s-reset2">Sì, azzera</button>`;$("#s-reset2").onclick=()=>{S=defState();save();go("oggi");};};
 };
 
+$("#nav").addEventListener("click",()=>{pathCtx=null;},true);
 render();
 if(STANDALONE&&"serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});}
 </script>

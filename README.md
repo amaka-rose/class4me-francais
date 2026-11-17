@@ -6,6 +6,7 @@ App per il telefono per arrivare alla certificazione **B2 di francese** (DELF B2
 
 ## Cosa fa
 
+- **Percorso**: 27 unità in 5 fasi (riattivazione, A2, B1, B2, preparazione all'esame DELF B2 o TCF Canada), ognuna con obiettivo, grammatica, esempi, attività e verifica; calendario aggiornato sul ritmo reale e sulla data dell'esame.
 - **Oggi**: la sessione del giorno (parole, ascolto, pronuncia, verbi, missione parlata o scritta, compito d'esame).
 - **Ascolta**: dialoghi in 5 passi (ascolto, domande, riascolto lento con testo, dettato, velocità piena), voce francese di Francia o del Québec.
 - **Pronuncia**: suoni nasali, u/ou, e muta, r, liaison, é/è; verifica con la dettatura.
