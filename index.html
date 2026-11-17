@@ -342,7 +342,7 @@ const PLACEMENT=[
 const NEED_HOURS={A1:450,A2:380,B1:250,B2:60};
 
 /* ============================ STATO ============================ */
-const KEY="c4m-fr-v1";
+const KEY="c4m-fr-v1"; const APP_VERSION="1.3 · 17/11/2026";
 function today(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
 function defState(){return {v:1,profile:{done:false,exam:"delf",date:"",daily:45,contexts:["amici","viaggio","lavoro","cantiere"],variant:"fr",start:"A1"},
  srs:{},custom:[],log:{},skills:{co:[],ce:[],ee:[],eo:[]},doneToday:{},dialogs:{},gen:[],pron:{},verbs:{n:0,ok:0},sims:[]};}
@@ -1136,6 +1136,7 @@ function viewImpostazioni(){
     <div class="row"><button class="btn small" id="s-key-save">Salva chiave</button><button class="btn soft small" id="s-key-test">Prova</button></div><p class="small" id="s-key-msg"></p>`}</div>
    <div class="card"><h3>Copia di sicurezza</h3><p class="small muted">I progressi sono salvati in questo browser. Esporta un file ogni tanto, e importalo per passare a un altro telefono.</p>
     <div class="row"><button class="btn soft small" id="s-exp">Esporta</button><label class="btn soft small" for="s-imp" style="cursor:pointer">Importa</label><input type="file" id="s-imp" accept="application/json" class="sr"></div><p class="small" id="s-bk-msg"></p></div>
+   <div class="card"><h3>Versione</h3><p class="small">Versione installata: <b>${APP_VERSION}</b></p><button class="btn soft small" id="s-upd">Scarica l'ultima versione</button><p class="small" id="s-upd-msg"></p></div>
    <div class="card"><h3>Ripeti il test di livello</h3><button class="btn soft" id="s-test">Rifai il test</button></div>
    <div class="card"><h3>Azzera tutto</h3><p class="small muted">Cancella progressi, parole e impostazioni.</p><button class="btn red" id="s-reset">Azzera</button><div id="s-conf"></div></div>`;
 }
@@ -1149,12 +1150,16 @@ binders.impostazioni=()=>{
     try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));a.download=name;document.body.appendChild(a);a.click();a.remove();$("#s-bk-msg").textContent="File esportato: "+name;}
     catch(e){copyText(data,$("#s-exp"));}};
   $("#s-imp").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{S=merge(JSON.parse(t));save();$("#s-bk-msg").textContent="Importato.";render();}).catch(()=>{$("#s-bk-msg").textContent="File non valido.";});};
+  $("#s-upd").onclick=async()=>{$("#s-upd-msg").textContent="Aggiorno...";
+    try{if(navigator.serviceWorker){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));}
+      if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)));}}catch(e){}
+    location.replace(location.pathname+"?v="+Date.now());};
   $("#s-test").onclick=()=>{test={i:0,ok:{A1:0,A2:0,B1:0,B2:0}};go("test");};
   $("#s-reset").onclick=()=>{$("#s-conf").innerHTML=`<p class="small">Confermi? L'operazione non si annulla.</p><button class="btn red small" id="s-reset2">Sì, azzera</button>`;$("#s-reset2").onclick=()=>{S=defState();save();go("oggi");};};
 };
 
 render();
-if(STANDALONE&&"serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{});}
+if(STANDALONE&&"serviceWorker" in navigator&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{});}
 </script>
 </body>
 </html>
